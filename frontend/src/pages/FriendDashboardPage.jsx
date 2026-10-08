@@ -1,0 +1,821 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import Navbar from '../components/common/Navbar.jsx';
+import Badge from '../components/common/Badge.jsx';
+import Modal from '../components/common/Modal.jsx';
+import api from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
+import { formatINR } from '../utils/currency.js';
+import { formatDate } from '../utils/date.js';
+import {
+  Users,
+  CreditCard,
+  Receipt,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  PlusCircle,
+  RefreshCw,
+  ArrowRight,
+  ShieldAlert,
+  Send,
+  Edit2,
+  ExternalLink,
+} from 'lucide-react';
+
+export default function FriendDashboardPage() {
+  const { user } = useAuth();
+  const { addToast } = useToast();
+
+  const [profiles, setProfiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Expanded statement per profile id
+  const [expandedProfileId, setExpandedProfileId] = useState(null);
+  const [profileStatements, setProfileStatements] = useState({});
+  const [loadingStatementId, setLoadingStatementId] = useState(null);
+
+  // Submit payment modal state
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [activeProfileForPayment, setActiveProfileForPayment] = useState(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('upi');
+  const [paymentRef, setPaymentRef] = useState('');
+  const [paymentDesc, setPaymentDesc] = useState('');
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [submittingPayment, setSubmittingPayment] = useState(false);
+
+  // Resubmit payment modal state
+  const [resubmitModalOpen, setResubmitModalOpen] = useState(false);
+  const [resubmitPayment, setResubmitPayment] = useState(null);
+  const [resubmitProfile, setResubmitProfile] = useState(null);
+  const [resubmitAmount, setResubmitAmount] = useState('');
+  const [resubmitMode, setResubmitMode] = useState('upi');
+  const [resubmitRef, setResubmitRef] = useState('');
+  const [resubmitDesc, setResubmitDesc] = useState('');
+  const [resubmitting, setResubmitting] = useState(false);
+
+  const fetchProfiles = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+
+      const res = await api.get('/friend/profiles');
+      if (res.success) {
+        setProfiles(res.data || []);
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to load your friend profiles', 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => {
+    fetchProfiles();
+  }, [fetchProfiles]);
+
+  const loadStatementForProfile = async (profile) => {
+    const personId = profile.person.id;
+    const groupId = profile.group.id;
+
+    if (expandedProfileId === personId) {
+      setExpandedProfileId(null);
+      return;
+    }
+
+    setExpandedProfileId(personId);
+    if (profileStatements[personId]) return;
+
+    try {
+      setLoadingStatementId(personId);
+      const res = await api.get(`/groups/${groupId}/people/${personId}/statement`);
+      if (res.success) {
+        setProfileStatements((prev) => ({
+          ...prev,
+          [personId]: res.data,
+        }));
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to load itemized statement', 'error');
+    } finally {
+      setLoadingStatementId(null);
+    }
+  };
+
+  const handleOpenSubmitPayment = (profile) => {
+    setActiveProfileForPayment(profile);
+    const remainingRupees = profile.summary.remainingToPay > 0
+      ? (profile.summary.remainingToPay / 100).toFixed(2)
+      : '';
+    setPaymentAmount(remainingRupees);
+    setPaymentMode('upi');
+    setPaymentRef('');
+    setPaymentDesc('');
+    setPaymentDate(new Date().toISOString().split('T')[0]);
+    setSubmitModalOpen(true);
+  };
+
+  const handleSubmitPayment = async (e) => {
+    e.preventDefault();
+    if (!activeProfileForPayment) return;
+
+    const parsedRupees = parseFloat(paymentAmount);
+    if (isNaN(parsedRupees) || parsedRupees <= 0) {
+      addToast('Please enter a valid amount', 'error');
+      return;
+    }
+
+    const amountInPaise = Math.round(parsedRupees * 100);
+
+    try {
+      setSubmittingPayment(true);
+      const res = await api.post('/friend/payments', {
+        personId: activeProfileForPayment.person.id,
+        groupId: activeProfileForPayment.group.id,
+        amount: amountInPaise,
+        mode: paymentMode,
+        reference: paymentRef,
+        description: paymentDesc,
+        date: paymentDate,
+      });
+
+      if (res.success) {
+        addToast('Repayment submitted to host! Awaiting approval ⏳', 'success');
+        setSubmitModalOpen(false);
+        // Invalidate cached statement and refresh
+        setProfileStatements((prev) => {
+          const next = { ...prev };
+          delete next[activeProfileForPayment.person.id];
+          return next;
+        });
+        fetchProfiles(true);
+        if (expandedProfileId === activeProfileForPayment.person.id) {
+          loadStatementForProfile(activeProfileForPayment);
+        }
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to submit payment', 'error');
+    } finally {
+      setSubmittingPayment(false);
+    }
+  };
+
+  const handleOpenResubmitModal = (payment, profile) => {
+    setResubmitPayment(payment);
+    setResubmitProfile(profile);
+    setResubmitAmount((payment.amount / 100).toFixed(2));
+    setResubmitMode(payment.mode || 'upi');
+    setResubmitRef(payment.reference || '');
+    setResubmitDesc(payment.description || '');
+    setResubmitModalOpen(true);
+  };
+
+  const handleResubmit = async (e) => {
+    e.preventDefault();
+    if (!resubmitPayment || !resubmitProfile) return;
+
+    const parsedRupees = parseFloat(resubmitAmount);
+    if (isNaN(parsedRupees) || parsedRupees <= 0) {
+      addToast('Please enter a valid amount', 'error');
+      return;
+    }
+
+    const amountInPaise = Math.round(parsedRupees * 100);
+
+    try {
+      setResubmitting(true);
+      const res = await api.patch(`/friend/payments/${resubmitPayment.id}`, {
+        personId: resubmitProfile.person.id,
+        groupId: resubmitProfile.group.id,
+        amount: amountInPaise,
+        mode: resubmitMode,
+        reference: resubmitRef,
+        description: resubmitDesc,
+      });
+
+      if (res.success) {
+        addToast('Payment resubmitted to host for approval! 🔄', 'success');
+        setResubmitModalOpen(false);
+        // Invalidate cached statement and refresh
+        setProfileStatements((prev) => {
+          const next = { ...prev };
+          delete next[resubmitProfile.person.id];
+          return next;
+        });
+        fetchProfiles(true);
+        if (expandedProfileId === resubmitProfile.person.id) {
+          loadStatementForProfile(resubmitProfile);
+        }
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to resubmit payment', 'error');
+    } finally {
+      setSubmittingPayment(false);
+    }
+  };
+
+  // Calculate global summary across all claimed groups
+  const totalRemainingAcrossGroups = profiles.reduce(
+    (sum, p) => sum + (p.summary?.remainingToPay || 0),
+    0
+  );
+  const totalPendingAcrossGroups = profiles.reduce(
+    (sum, p) => sum + (p.summary?.pendingSentTotal || 0),
+    0
+  );
+
+  return (
+    <div className="min-h-screen bg-background text-text flex flex-col pb-20 sm:pb-8 transition-colors">
+      <Navbar />
+
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-text tracking-tight">
+                Friend Passbook
+              </h1>
+              <Badge variant="brand" size="xs">
+                Linked Profiles
+              </Badge>
+            </div>
+            <p className="text-xs text-text-muted mt-1">
+              Track your shared expenses, repayments, and pending host approvals across all your friend groups.
+            </p>
+          </div>
+
+          <button
+            onClick={() => fetchProfiles(true)}
+            disabled={refreshing}
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface hover:bg-surface-raised border border-border text-text transition disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        {/* Global Summary Cards Bento */}
+        {profiles.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="bg-surface p-4 rounded-2xl border border-border space-y-1 shadow-sm">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted block">
+                Total You Owe
+              </span>
+              <span className={`text-xl sm:text-2xl font-black mt-1 block font-mono tabular-nums ${totalRemainingAcrossGroups > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                {formatINR(totalRemainingAcrossGroups)}
+              </span>
+              <span className="text-[11px] text-text-muted block">
+                Net remaining balance
+              </span>
+            </div>
+
+            <div className="bg-surface p-4 rounded-2xl border border-border space-y-1 shadow-sm">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
+                Pending Approvals
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 mt-1 block font-mono tabular-nums">
+                {formatINR(totalPendingAcrossGroups)}
+              </span>
+              <span className="text-[11px] text-text-muted block">
+                Submitted to host
+              </span>
+            </div>
+
+            <div className="bg-surface p-4 rounded-2xl border border-border space-y-1 shadow-sm col-span-2 sm:col-span-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted block">
+                Linked Groups
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-text mt-1 block font-mono tabular-nums">
+                {profiles.length}
+              </span>
+              <span className="text-[11px] text-text-muted block">
+                Active group memberships
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="py-20 flex flex-col items-center justify-center">
+            <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mb-3" />
+            <p className="text-xs text-text-muted">Loading your statements...</p>
+          </div>
+        ) : profiles.length === 0 ? (
+          <div className="bg-surface p-12 rounded-2xl text-center space-y-4 border border-dashed border-border shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-surface-raised border border-border flex items-center justify-center mx-auto text-text-muted">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-text">No Linked Groups Yet</h2>
+              <p className="text-xs text-text-muted max-w-sm mx-auto mt-1 leading-relaxed">
+                When a host adds you to an expense group, they can share an invite link with you. Once you claim it, your statement will appear here!
+              </p>
+            </div>
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-brand-500 text-slate-950 hover:bg-brand-400 transition"
+            >
+              Go to Host Dashboard
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {profiles.map((item) => {
+              const { person, group, summary } = item;
+              const isExpanded = expandedProfileId === person.id;
+              const statement = profileStatements[person.id];
+              const isLoadingThisStatement = loadingStatementId === person.id;
+              const owesMoney = summary.remainingToPay > 0;
+              const isSettled = summary.remainingToPay === 0 && summary.groupOwesYou === 0;
+
+              return (
+                <div
+                  key={person.id}
+                  className="glass-panel rounded-2xl border border-slate-800 overflow-hidden transition-all duration-200"
+                >
+                  {/* Card Header & Summary */}
+                  <div className="p-5 sm:p-6 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-extrabold text-lg text-white">{group.name}</h3>
+                          <Badge
+                            variant={group.status === 'active' ? 'brand' : 'default'}
+                            size="xs"
+                          >
+                            {group.status}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-slate-400 block mt-0.5">
+                          Profile: <strong className="text-slate-200">{person.name}</strong>
+                          {person.phone && ` • ${person.phone}`}
+                        </span>
+                      </div>
+
+                      {/* Balance Status */}
+                      <div className="text-left sm:text-right">
+                        {owesMoney ? (
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider block">
+                              You Owe Host
+                            </span>
+                            <span className="text-xl font-black text-amber-400 block">
+                              {formatINR(summary.remainingToPay)}
+                            </span>
+                          </div>
+                        ) : isSettled ? (
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider block">
+                              Status
+                            </span>
+                            <span className="text-lg font-bold text-emerald-400 block">
+                              Fully Settled (₹0)
+                            </span>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-teal-400 tracking-wider block">
+                              Host Owes You
+                            </span>
+                            <span className="text-xl font-black text-teal-400 block">
+                              {formatINR(summary.groupOwesYou)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Stats Grid */}
+                    <div className="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs">
+                      <div>
+                        <span className="text-slate-500 text-[11px] block">Your Total Share</span>
+                        <span className="font-bold text-slate-200 block mt-0.5">
+                          {formatINR(summary.shareSplitsTotal)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 text-[11px] block">Accepted Repayments</span>
+                        <span className="font-bold text-emerald-400 block mt-0.5">
+                          {formatINR(summary.acceptedSentTotal)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 text-[11px] block">Pending Approvals</span>
+                        <span className="font-bold text-purple-400 block mt-0.5">
+                          {formatINR(summary.pendingSentTotal)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card Actions */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
+                      <button
+                        onClick={() => loadStatementForProfile(item)}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white transition py-1"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="w-3.5 h-3.5" />
+                            <span>Hide Activity Details</span>
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3.5 h-3.5" />
+                            <span>View Itemized Activity</span>
+                          </>
+                        )}
+                      </button>
+
+                      <div className="flex items-center gap-2">
+                        {group.status === 'active' && (
+                          <button
+                            onClick={() => handleOpenSubmitPayment(item)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition shadow-sm"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>+ Submit Payment</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded Itemized Activity Section */}
+                  {isExpanded && (
+                    <div className="border-t border-slate-800 bg-slate-950/60 p-5 sm:p-6 space-y-6 animate-fade-in">
+                      {isLoadingThisStatement ? (
+                        <div className="py-8 flex justify-center items-center gap-2 text-xs text-slate-400">
+                          <div className="w-4 h-4 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+                          <span>Loading activity...</span>
+                        </div>
+                      ) : !statement ? (
+                        <p className="text-xs text-slate-400 text-center py-4">
+                          Failed to load activity details.
+                        </p>
+                      ) : (
+                        <>
+                          {/* Payments Section */}
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                              <CreditCard className="w-3.5 h-3.5 text-brand-400" />
+                              Repayments Submitted ({statement.payments?.length || 0})
+                            </h4>
+
+                            {statement.payments?.length === 0 ? (
+                              <p className="text-xs text-slate-500 italic">No repayments recorded yet.</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {statement.payments.map((p) => {
+                                  const isAccepted = p.status === 'accepted';
+                                  const isPending = p.status === 'pending';
+                                  const isRejected = p.status === 'rejected';
+
+                                  return (
+                                    <div
+                                      key={p.id}
+                                      className={`p-3.5 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                        isRejected
+                                          ? 'bg-rose-950/20 border-rose-500/30'
+                                          : isPending
+                                          ? 'bg-amber-950/20 border-amber-500/30'
+                                          : 'bg-slate-900/60 border-slate-800'
+                                      }`}
+                                    >
+                                      <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-bold text-white">
+                                            {formatINR(p.amount)}
+                                          </span>
+                                          <Badge
+                                            variant={
+                                              isAccepted ? 'success' : isPending ? 'warning' : 'danger'
+                                            }
+                                            size="xs"
+                                          >
+                                            {p.status}
+                                          </Badge>
+                                          <span className="text-[10px] text-slate-400 uppercase font-semibold">
+                                            {p.mode}
+                                          </span>
+                                        </div>
+
+                                        <p className="text-slate-400 text-[11px]">
+                                          {formatDate(p.date)}{' '}
+                                          {p.reference && (
+                                            <span className="font-mono text-slate-500">
+                                              • Ref: {p.reference}
+                                            </span>
+                                          )}
+                                        </p>
+
+                                        {p.description && (
+                                          <p className="text-slate-300 text-[11px]">{p.description}</p>
+                                        )}
+
+                                        {/* Rejection Alert & Resubmit Action */}
+                                        {isRejected && (
+                                          <div className="pt-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div className="flex items-start gap-1.5 text-rose-300 text-[11px]">
+                                              <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                              <span>
+                                                Host Reason: <strong>{p.rejectReason || 'No reason provided'}</strong>
+                                              </span>
+                                            </div>
+                                            <button
+                                              onClick={() => handleOpenResubmitModal(p, item)}
+                                              className="self-start sm:self-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 transition"
+                                            >
+                                              <Edit2 className="w-3 h-3" />
+                                              <span>Edit & Resubmit</span>
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div className="text-right shrink-0">
+                                        <span className="text-[10px] text-slate-500">
+                                          {isAccepted
+                                            ? 'Verified by host'
+                                            : isPending
+                                            ? 'Awaiting host verification'
+                                            : 'Not applied to balance'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Itemized Expenses Section */}
+                          <div className="space-y-3 pt-2">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                              <Receipt className="w-3.5 h-3.5 text-sky-400" />
+                              Expenses You Were Split In ({statement.expenses?.length || 0})
+                            </h4>
+
+                            {statement.expenses?.length === 0 ? (
+                              <p className="text-xs text-slate-500 italic">No expenses recorded.</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {statement.expenses.map((exp) => (
+                                  <div
+                                    key={exp.expenseId}
+                                    className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs flex items-center justify-between gap-3"
+                                  >
+                                    <div>
+                                      <h5 className="font-bold text-white">{exp.title}</h5>
+                                      <p className="text-[11px] text-slate-400">
+                                        {formatDate(exp.date)} • Paid by {exp.paidBy} (Total {formatINR(exp.totalAmount)})
+                                      </p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <span className="text-[10px] uppercase font-semibold text-slate-500 block">
+                                        Your Share
+                                      </span>
+                                      <span className="font-extrabold text-slate-200">
+                                        {formatINR(exp.personShare)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+
+      {/* Submit Repayment Modal */}
+      <Modal
+        isOpen={submitModalOpen}
+        onClose={() => setSubmitModalOpen(false)}
+        title="Submit Repayment to Host"
+      >
+        {activeProfileForPayment && (
+          <form onSubmit={handleSubmitPayment} className="space-y-4">
+            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+              <span className="text-slate-400 block">Submitting repayment for</span>
+              <strong className="text-white block mt-0.5">
+                {activeProfileForPayment.group.name} ({activeProfileForPayment.person.name})
+              </strong>
+              <span className="text-[11px] text-amber-400 mt-1 block">
+                Balance due: {formatINR(activeProfileForPayment.summary.remainingToPay)}
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Amount (₹) *
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                data-amount-input="true"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                placeholder="500.00"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Payment Mode *
+                </label>
+                <select
+                  value={paymentMode}
+                  onChange={(e) => setPaymentMode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
+                >
+                  <option value="upi">UPI (GPay, PhonePe, Paytm)</option>
+                  <option value="cash">Cash</option>
+                  <option value="bank_transfer">Bank Transfer / IMPS</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Payment Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Transaction Reference / UTR (Optional)
+              </label>
+              <input
+                type="text"
+                value={paymentRef}
+                onChange={(e) => setPaymentRef(e.target.value)}
+                placeholder="e.g. UPI Ref 3249019283"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Note / Description (Optional)
+              </label>
+              <input
+                type="text"
+                value={paymentDesc}
+                onChange={(e) => setPaymentDesc(e.target.value)}
+                placeholder="e.g. Paid for dinner & cab"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <p className="text-[11px] text-slate-400">
+              💡 This repayment will be marked as <strong className="text-amber-400">Pending</strong> until the group host approves and applies it to balances.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setSubmitModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submittingPayment}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {submittingPayment ? (
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+                ) : (
+                  <span>Submit to Host</span>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Resubmit Repayment Modal */}
+      <Modal
+        isOpen={resubmitModalOpen}
+        onClose={() => setResubmitModalOpen(false)}
+        title="Edit & Resubmit Payment"
+      >
+        {resubmitPayment && (
+          <form onSubmit={handleResubmit} className="space-y-4">
+            <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-xs text-rose-300">
+              <span className="font-bold block">Previous Rejection Reason:</span>
+              <p className="mt-0.5">{resubmitPayment.rejectReason || 'No reason provided by host'}</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Amount (₹) *
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                data-amount-input="true"
+                value={resubmitAmount}
+                onChange={(e) => setResubmitAmount(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Payment Mode *
+              </label>
+              <select
+                value={resubmitMode}
+                onChange={(e) => setResubmitMode(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
+              >
+                <option value="upi">UPI (GPay, PhonePe, Paytm)</option>
+                <option value="cash">Cash</option>
+                <option value="bank_transfer">Bank Transfer / IMPS</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Transaction Reference / UTR
+              </label>
+              <input
+                type="text"
+                value={resubmitRef}
+                onChange={(e) => setResubmitRef(e.target.value)}
+                placeholder="Updated transaction ID or reference"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Note / Clarification
+              </label>
+              <input
+                type="text"
+                value={resubmitDesc}
+                onChange={(e) => setResubmitDesc(e.target.value)}
+                placeholder="Add clarification for the host"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setResubmitModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={resubmitting}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {resubmitting ? (
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+                ) : (
+                  <span>Resubmit Payment</span>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+    </div>
+  );
+}

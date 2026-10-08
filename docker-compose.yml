@@ -1,0 +1,30 @@
+services:
+  postgres_dev:
+    image: postgres:16-alpine
+    container_name: splittrack_postgres_dev
+    environment:
+      POSTGRES_USER: splittrack
+      POSTGRES_PASSWORD: splittrack
+      POSTGRES_DB: splittrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - dev_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: splittrack_postgres_test
+    environment:
+      POSTGRES_USER: splittrack
+      POSTGRES_PASSWORD: splittrack
+      POSTGRES_DB: splittrack_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - test_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  dev_data:
+  test_data:

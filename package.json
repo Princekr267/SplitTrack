@@ -1,0 +1,18 @@
+{
+  "name": "splittrack",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "test": "npm run test --prefix backend",
+    "seed": "npm run seed --prefix backend",
+    "db:generate": "npm run db:generate --prefix backend",
+    "db:migrate": "npm run db:migrate --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
