@@ -31,8 +31,8 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or Postman)
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (mobile, curl, health checks) or matching allowed origins
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
       return callback(new Error(`CORS origin not allowed: ${origin}`));
@@ -67,8 +67,8 @@ app.use('/api/admin', adminRoutes);
 // Centralized error handling
 app.use(errorHandler);
 
-// Listen when executed directly
-if (process.env.NODE_ENV !== 'test') {
+// Listen when executed directly (skip on Vercel serverless runtime)
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   const PORT = env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`🚀 SplitTrack Backend running on http://localhost:${PORT}`);
