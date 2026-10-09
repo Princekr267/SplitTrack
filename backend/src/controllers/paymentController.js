@@ -1,10 +1,10 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../config/db.js';
-import { payments, people } from '../models/index.js';
+import { payments, people, groups } from '../models/index.js';
 import { ensureGroupNotSettled } from '../services/groupService.js';
 import { recordAuditLog } from '../services/auditService.js';
 
-export async function createHostPayment(req, res, next) {
+export async function createPayment(req, res, next) {
   try {
     const { groupId } = req.params;
     const {
@@ -18,6 +18,54 @@ export async function createHostPayment(req, res, next) {
     } = req.body;
 
     await ensureGroupNotSettled(groupId);
+
+    const [group] = await db
+      .select()
+      .from(groups)
+      .where(and(eq(groups.id, groupId), eq(groups.isDeleted, false)));
+
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'GROUP_NOT_FOUND', message: 'Group not found.' },
+      });
+    }
+
+    const isHost = group.createdBy === req.user.id || req.user.role === 'admin';
+
+    // If friend, verify membership and ensure friend is the sender
+    if (!isHost) {
+      const [linkedPerson] = await db
+        .select({ id: people.id })
+        .from(people)
+        .where(
+          and(
+            eq(people.groupId, groupId),
+            eq(people.linkedUserId, req.user.id),
+            eq(people.isDeleted, false)
+          )
+        );
+
+      if (!linkedPerson) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'You are not a member of this group.',
+          },
+        });
+      }
+
+      if (fromPersonId !== linkedPerson.id) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED_SENDER',
+            message: 'You can only submit payments where you are the sender.',
+          },
+        });
+      }
+    }
 
     if (fromPersonId === toPersonId) {
       return res.status(400).json({
@@ -62,6 +110,9 @@ export async function createHostPayment(req, res, next) {
       });
     }
 
+    const paymentStatus = isHost ? 'accepted' : 'pending';
+    const createdByType = isHost ? 'host' : 'friend';
+
     const result = await db.transaction(async (tx) => {
       const [payment] = await tx
         .insert(payments)
@@ -74,18 +125,18 @@ export async function createHostPayment(req, res, next) {
           mode,
           description: description || '',
           reference: reference || '',
-          status: 'accepted', // Auto-accepted when recorded by host
-          createdByType: 'host',
+          status: paymentStatus,
+          createdByType,
           createdBy: req.user.id,
-          decidedBy: req.user.id,
-          decidedAt: new Date(),
+          decidedBy: isHost ? req.user.id : null,
+          decidedAt: isHost ? new Date() : null,
         })
         .returning();
 
       await recordAuditLog(
         {
           actor: req.user,
-          action: 'RECORD_PAYMENT',
+          action: isHost ? 'RECORD_PAYMENT' : 'SUBMIT_PAYMENT',
           entityType: 'Payment',
           entityId: payment.id,
           groupId,
@@ -100,12 +151,17 @@ export async function createHostPayment(req, res, next) {
 
     res.status(201).json({
       success: true,
+      message: isHost
+        ? 'Payment recorded successfully.'
+        : 'Payment submitted to host for approval.',
       data: result,
     });
   } catch (error) {
     next(error);
   }
 }
+
+export const createHostPayment = createPayment;
 
 export async function getPayments(req, res, next) {
   try {

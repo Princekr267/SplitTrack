@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  createHostPayment,
+  createPayment,
   getPayments,
   getPendingPayments,
   acceptPayment,
@@ -19,7 +19,8 @@ const router = Router({ mergeParams: true });
 
 router.use(authenticate);
 
-router.post('/', requireGroupHost, validate(createHostPaymentSchema), createHostPayment);
+// Host can record payment for anyone; Friend can submit pending payment for self
+router.post('/', validate(createHostPaymentSchema), createPayment);
 router.get('/', validate(groupIdParamSchema), getPayments);
 
 // Host Pending Payments Inbox

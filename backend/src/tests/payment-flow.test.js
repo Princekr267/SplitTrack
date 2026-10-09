@@ -142,4 +142,79 @@ describe('paymentFlow: Friend Submission, Host Inbox (Accept/Reject), & Resubmis
     expect(balances.summary.isSettledReady).toBe(true);
     expect(balances.summary.netSumCheck).toBe(0);
   });
+
+  it('allows friend to submit payment for self to other member via group payment endpoint', async () => {
+    const [host] = await db
+      .insert(users)
+      .values({ name: 'Host Arjun', email: 'host_group_pay@test.com', passwordHash: 'hash' })
+      .returning();
+
+    const { group, hostPerson } = await createGroupWithHost({ name: 'Dinner Group', user: host });
+
+    const [friendUser] = await db
+      .insert(users)
+      .values({ name: 'Friend Bob', email: 'bob_group_pay@test.com', passwordHash: 'hash' })
+      .returning();
+
+    const [bobPerson] = await db
+      .insert(people)
+      .values({
+        groupId: group.id,
+        name: 'Bob',
+        linkedUserId: friendUser.id,
+        isHost: false,
+      })
+      .returning();
+
+    const [otherPerson] = await db
+      .insert(people)
+      .values({
+        groupId: group.id,
+        name: 'Charlie',
+        isHost: false,
+      })
+      .returning();
+
+    const friendToken = jwt.sign({ userId: friendUser.id }, env.JWT_SECRET);
+    const hostToken = jwt.sign({ userId: host.id }, env.JWT_SECRET);
+
+    // Friend cannot submit payment on behalf of Charlie
+    const badRes = await request(app)
+      .post(`/api/groups/${group.id}/payments`)
+      .set('Cookie', [`splittrack_token=${friendToken}`])
+      .send({
+        fromPersonId: otherPerson.id,
+        toPersonId: hostPerson.id,
+        amount: 5000,
+        mode: 'online',
+      });
+    expect(badRes.status).toBe(403);
+    expect(badRes.body.error.code).toBe('UNAUTHORIZED_SENDER');
+
+    // Friend can submit payment for himself to host -> created as pending
+    const friendRes = await request(app)
+      .post(`/api/groups/${group.id}/payments`)
+      .set('Cookie', [`splittrack_token=${friendToken}`])
+      .send({
+        fromPersonId: bobPerson.id,
+        toPersonId: hostPerson.id,
+        amount: 5000,
+        mode: 'online',
+      });
+    expect(friendRes.status).toBe(201);
+    expect(friendRes.body.data.status).toBe('pending');
+
+    // Host can record payment between any two members -> created as accepted
+    const hostRes = await request(app)
+      .post(`/api/groups/${group.id}/payments`)
+      .set('Cookie', [`splittrack_token=${hostToken}`])
+      .send({
+        fromPersonId: otherPerson.id,
+        toPersonId: hostPerson.id,
+        amount: 3000,
+        mode: 'cash',
+      });
+    expect(hostRes.status).toBe(201);
+    expect(hostRes.body.data.status).toBe('accepted');
+  });
 });

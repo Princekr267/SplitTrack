@@ -27,6 +27,10 @@ import {
   Info,
   Eye,
 } from 'lucide-react';
+import { m, AnimatePresence } from 'motion/react';
+import { springs, durations, easings } from '../motion/tokens.js';
+import { Stagger } from '../motion/components.jsx';
+import { listItem } from '../motion/variants.js';
 
 export default function FriendDashboardPage() {
   const { user } = useAuth();
@@ -282,7 +286,7 @@ export default function FriendDashboardPage() {
           <button
             onClick={() => fetchProfiles(true)}
             disabled={refreshing}
-            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface hover:bg-surface-raised border border-border text-text transition disabled:opacity-50"
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface hover:bg-surface-raised border border-border text-text transition disabled:opacity-50 shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
@@ -365,25 +369,29 @@ export default function FriendDashboardPage() {
               const isSettled = summary.remainingToPay === 0 && summary.groupOwesYou === 0;
 
               return (
-                <div
+                <m.div
                   key={person.id}
-                  className="glass-panel rounded-2xl border border-slate-800 overflow-hidden transition-all duration-200"
+                  layout="position"
+                  transition={springs.smooth}
+                  style={{ borderRadius: 16 }}
+                  className="bg-surface rounded-2xl border border-border shadow-xs overflow-hidden"
                 >
                   {/* Card Header & Summary */}
                   <div className="p-5 sm:p-6 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-extrabold text-lg text-white">{group.name}</h3>
+                          <h3 className="font-extrabold text-lg text-text">{group.name}</h3>
                           <Badge
-                            variant={group.status === 'active' ? 'brand' : 'default'}
+                            variant={group.status === 'active' ? 'active' : 'settled'}
                             size="xs"
+                            showIcon
                           >
-                            {group.status}
+                            {group.status === 'active' ? 'Active' : 'Settled'}
                           </Badge>
                         </div>
-                        <span className="text-xs text-slate-400 block mt-0.5">
-                          Profile: <strong className="text-slate-200">{person.name}</strong>
+                        <span className="text-xs text-text-muted block mt-0.5">
+                          Profile: <strong className="text-text font-semibold">{person.name}</strong>
                           {person.phone && ` • ${person.phone}`}
                         </span>
                       </div>
@@ -392,28 +400,28 @@ export default function FriendDashboardPage() {
                       <div className="text-left sm:text-right">
                         {owesMoney ? (
                           <div>
-                            <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider block">
+                            <span className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400 tracking-wider block">
                               You Owe Host
                             </span>
-                            <span className="text-xl font-black text-amber-400 block">
+                            <span className="text-xl font-black text-rose-600 dark:text-rose-400 block font-mono tabular-nums">
                               {formatINR(summary.remainingToPay)}
                             </span>
                           </div>
                         ) : isSettled ? (
                           <div>
-                            <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider block">
+                            <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider block">
                               Status
                             </span>
-                            <span className="text-lg font-bold text-emerald-400 block">
+                            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 block font-mono tabular-nums">
                               Fully Settled (₹0)
                             </span>
                           </div>
                         ) : (
                           <div>
-                            <span className="text-[10px] uppercase font-bold text-teal-400 tracking-wider block">
+                            <span className="text-[10px] uppercase font-bold text-teal-600 dark:text-teal-400 tracking-wider block">
                               Host Owes You
                             </span>
-                            <span className="text-xl font-black text-teal-400 block">
+                            <span className="text-xl font-black text-teal-600 dark:text-teal-400 block font-mono tabular-nums">
                               {formatINR(summary.groupOwesYou)}
                             </span>
                           </div>
@@ -422,22 +430,22 @@ export default function FriendDashboardPage() {
                     </div>
 
                     {/* Quick Stats Grid */}
-                    <div className="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs">
+                    <div className="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-surface-raised border border-border text-xs">
                       <div>
-                        <span className="text-slate-500 text-[11px] block">Your Total Share</span>
-                        <span className="font-bold text-slate-200 block mt-0.5">
+                        <span className="text-text-muted text-[11px] block">Your Total Share</span>
+                        <span className="font-bold text-text block mt-0.5 font-mono tabular-nums">
                           {formatINR(summary.shareSplitsTotal)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-500 text-[11px] block">Accepted Repayments</span>
-                        <span className="font-bold text-emerald-400 block mt-0.5">
+                        <span className="text-text-muted text-[11px] block">Accepted Repayments</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5 font-mono tabular-nums">
                           {formatINR(summary.acceptedSentTotal)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-500 text-[11px] block">Pending Approvals</span>
-                        <span className="font-bold text-purple-400 block mt-0.5">
+                        <span className="text-text-muted text-[11px] block">Pending Approvals</span>
+                        <span className="font-bold text-purple-600 dark:text-purple-400 block mt-0.5 font-mono tabular-nums">
                           {formatINR(summary.pendingSentTotal)}
                         </span>
                       </div>
@@ -445,16 +453,16 @@ export default function FriendDashboardPage() {
 
                     {/* Bill Visibility Privacy Banner */}
                     {!item.person.canViewAllBills ? (
-                      <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center gap-2.5 text-xs text-slate-400">
-                        <Info className="w-4 h-4 text-slate-500 shrink-0" />
+                      <div className="p-3 rounded-xl bg-surface-raised border border-border flex items-center gap-2.5 text-xs text-text-muted">
+                        <Info className="w-4 h-4 text-text-muted shrink-0" />
                         <span className="leading-relaxed">
                           You are viewing your own bills. The host has not enabled full group visibility for you.
                         </span>
                       </div>
                     ) : (
                       <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-                        <div className="flex items-center gap-2 text-brand-300">
-                          <Eye className="w-4 h-4 text-brand-400 shrink-0" />
+                        <div className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-medium">
+                          <Eye className="w-4 h-4 shrink-0" />
                           <span>Full group bill visibility is enabled by the host.</span>
                         </div>
                         <button
@@ -469,186 +477,203 @@ export default function FriendDashboardPage() {
                     )}
 
                     {/* Card Actions */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
-                      <button
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border">
+                      <m.button
+                        whileTap={{ scale: 0.98 }}
+                        transition={springs.snappy}
                         onClick={() => loadStatementForProfile(item)}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white transition py-1"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-muted hover:text-text transition-colors py-1 cursor-pointer"
                       >
-                        {isExpanded ? (
-                          <>
-                            <ChevronUp className="w-3.5 h-3.5" />
-                            <span>Hide Activity Details</span>
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-3.5 h-3.5" />
-                            <span>View Itemized Activity</span>
-                          </>
-                        )}
-                      </button>
+                        <m.span
+                          animate={{ rotate: isExpanded ? 180 : 0 }}
+                          transition={springs.snappy}
+                          className="inline-flex"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </m.span>
+                        <span>{isExpanded ? 'Hide Activity Details' : 'View Itemized Activity'}</span>
+                      </m.button>
 
                       <div className="flex items-center gap-2">
                         {group.status === 'active' && (
-                          <button
+                          <m.button
+                            whileTap={{ scale: 0.97 }}
+                            transition={springs.snappy}
                             onClick={() => handleOpenSubmitPayment(item)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition-colors shadow-sm cursor-pointer"
                           >
                             <Send className="w-3.5 h-3.5" />
                             <span>+ Submit Payment</span>
-                          </button>
+                          </m.button>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Expanded Itemized Activity Section */}
-                  {isExpanded && (
-                    <div className="border-t border-slate-800 bg-slate-950/60 p-5 sm:p-6 space-y-6 animate-fade-in">
-                      {isLoadingThisStatement ? (
-                        <div className="py-8 flex justify-center items-center gap-2 text-xs text-slate-400">
-                          <div className="w-4 h-4 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
-                          <span>Loading activity...</span>
-                        </div>
-                      ) : !statement ? (
-                        <p className="text-xs text-slate-400 text-center py-4">
-                          Failed to load activity details.
-                        </p>
-                      ) : (
-                        <>
-                          {/* Payments Section */}
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                              <CreditCard className="w-3.5 h-3.5 text-brand-400" />
-                              Repayments Submitted ({statement.payments?.length || 0})
-                            </h4>
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <m.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{
+                          height: springs.smooth,
+                          opacity: { duration: durations.fast, ease: easings.easeOut },
+                        }}
+                        className="overflow-hidden border-t border-border bg-surface-raised/40"
+                      >
+                        <div className="p-5 sm:p-6 space-y-6">
+                          {isLoadingThisStatement ? (
+                            <div className="py-8 flex justify-center items-center gap-2 text-xs text-text-muted">
+                              <div className="w-4 h-4 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+                              <span>Loading activity...</span>
+                            </div>
+                          ) : !statement ? (
+                            <p className="text-xs text-text-muted text-center py-4">
+                              Failed to load activity details.
+                            </p>
+                          ) : (
+                            <>
+                              {/* Payments Section */}
+                              <div className="space-y-3">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-text flex items-center gap-1.5">
+                                  <CreditCard className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
+                                  Repayments Submitted ({statement.payments?.length || 0})
+                                </h4>
 
-                            {statement.payments?.length === 0 ? (
-                              <p className="text-xs text-slate-500 italic">No repayments recorded yet.</p>
-                            ) : (
-                              <div className="space-y-2">
-                                {statement.payments.map((p) => {
-                                  const isAccepted = p.status === 'accepted';
-                                  const isPending = p.status === 'pending';
-                                  const isRejected = p.status === 'rejected';
+                                {statement.payments?.length === 0 ? (
+                                  <p className="text-xs text-text-muted italic">No repayments recorded yet.</p>
+                                ) : (
+                                  <Stagger className="space-y-2">
+                                    {statement.payments.map((p) => {
+                                      const isAccepted = p.status === 'accepted';
+                                      const isPending = p.status === 'pending';
+                                      const isRejected = p.status === 'rejected';
 
-                                  return (
-                                    <div
-                                      key={p.id}
-                                      className={`p-3.5 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                                        isRejected
-                                          ? 'bg-rose-950/20 border-rose-500/30'
-                                          : isPending
-                                          ? 'bg-amber-950/20 border-amber-500/30'
-                                          : 'bg-slate-900/60 border-slate-800'
-                                      }`}
-                                    >
-                                      <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-bold text-white">
-                                            {formatINR(p.amount)}
-                                          </span>
-                                          <Badge
-                                            variant={
-                                              isAccepted ? 'success' : isPending ? 'warning' : 'danger'
-                                            }
-                                            size="xs"
-                                          >
-                                            {p.status}
-                                          </Badge>
-                                          <span className="text-[10px] text-slate-400 uppercase font-semibold">
-                                            {p.mode}
-                                          </span>
-                                        </div>
-
-                                        <p className="text-slate-400 text-[11px]">
-                                          {formatDate(p.date)}{' '}
-                                          {p.reference && (
-                                            <span className="font-mono text-slate-500">
-                                              • Ref: {p.reference}
-                                            </span>
-                                          )}
-                                        </p>
-
-                                        {p.description && (
-                                          <p className="text-slate-300 text-[11px]">{p.description}</p>
-                                        )}
-
-                                        {/* Rejection Alert & Resubmit Action */}
-                                        {isRejected && (
-                                          <div className="pt-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                            <div className="flex items-start gap-1.5 text-rose-300 text-[11px]">
-                                              <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                                              <span>
-                                                Host Reason: <strong>{p.rejectReason || 'No reason provided'}</strong>
+                                      return (
+                                        <m.div
+                                          key={p.id}
+                                          variants={listItem}
+                                          className={`p-3.5 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                            isRejected
+                                              ? 'bg-rose-500/10 border-rose-500/30'
+                                              : isPending
+                                              ? 'bg-amber-500/10 border-amber-500/30'
+                                              : 'bg-surface border-border'
+                                          }`}
+                                        >
+                                          <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-bold text-text font-mono tabular-nums text-sm">
+                                                {formatINR(p.amount)}
+                                              </span>
+                                              <Badge
+                                                variant={
+                                                  isAccepted ? 'accepted' : isPending ? 'pending' : 'rejected'
+                                                }
+                                                size="xs"
+                                                showIcon
+                                              >
+                                                {p.status}
+                                              </Badge>
+                                              <span className="text-[10px] text-text-muted uppercase font-semibold">
+                                                {p.mode}
                                               </span>
                                             </div>
-                                            <button
-                                              onClick={() => handleOpenResubmitModal(p, item)}
-                                              className="self-start sm:self-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 transition"
-                                            >
-                                              <Edit2 className="w-3 h-3" />
-                                              <span>Edit & Resubmit</span>
-                                            </button>
+
+                                            <p className="text-text-muted text-[11px]">
+                                              {formatDate(p.date)}{' '}
+                                              {p.reference && (
+                                                <span className="font-mono text-text-muted">
+                                                  • Ref: {p.reference}
+                                                </span>
+                                              )}
+                                            </p>
+
+                                            {p.description && (
+                                              <p className="text-text text-[11px]">{p.description}</p>
+                                            )}
+
+                                            {/* Rejection Alert & Resubmit Action */}
+                                            {isRejected && (
+                                              <div className="pt-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                <div className="flex items-start gap-1.5 text-rose-600 dark:text-rose-400 text-[11px]">
+                                                  <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                                  <span>
+                                                    Host Reason: <strong>{p.rejectReason || 'No reason provided'}</strong>
+                                                  </span>
+                                                </div>
+                                                <button
+                                                  onClick={() => handleOpenResubmitModal(p, item)}
+                                                  className="self-start sm:self-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-500/20 text-rose-700 dark:text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 transition"
+                                                >
+                                                  <Edit2 className="w-3 h-3" />
+                                                  <span>Edit & Resubmit</span>
+                                                </button>
+                                              </div>
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
 
-                                      <div className="text-right shrink-0">
-                                        <span className="text-[10px] text-slate-500">
-                                          {isAccepted
-                                            ? 'Verified by host'
-                                            : isPending
-                                            ? 'Awaiting host verification'
-                                            : 'Not applied to balance'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                          <div className="text-right shrink-0">
+                                            <span className="text-[10px] text-text-muted">
+                                              {isAccepted
+                                                ? 'Verified by host'
+                                                : isPending
+                                                ? 'Awaiting host verification'
+                                                : 'Not applied to balance'}
+                                            </span>
+                                          </div>
+                                        </m.div>
+                                      );
+                                    })}
+                                  </Stagger>
+                                )}
                               </div>
-                            )}
-                          </div>
 
-                          {/* Itemized Expenses Section */}
-                          <div className="space-y-3 pt-2">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                              <Receipt className="w-3.5 h-3.5 text-sky-400" />
-                              Expenses You Were Split In ({statement.expenses?.length || 0})
-                            </h4>
+                              {/* Itemized Expenses Section */}
+                              <div className="space-y-3 pt-2">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-text flex items-center gap-1.5">
+                                  <Receipt className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                                  Expenses You Were Split In ({statement.expenses?.length || 0})
+                                </h4>
 
-                            {statement.expenses?.length === 0 ? (
-                              <p className="text-xs text-slate-500 italic">No expenses recorded.</p>
-                            ) : (
-                              <div className="space-y-2">
-                                {statement.expenses.map((exp) => (
-                                  <div
-                                    key={exp.expenseId}
-                                    className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs flex items-center justify-between gap-3"
-                                  >
-                                    <div>
-                                      <h5 className="font-bold text-white">{exp.title}</h5>
-                                      <p className="text-[11px] text-slate-400">
-                                        {formatDate(exp.date)} • Paid by {exp.paidBy} (Total {formatINR(exp.totalAmount)})
-                                      </p>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                      <span className="text-[10px] uppercase font-semibold text-slate-500 block">
-                                        Your Share
-                                      </span>
-                                      <span className="font-extrabold text-slate-200">
-                                        {formatINR(exp.personShare)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
+                                {statement.expenses?.length === 0 ? (
+                                  <p className="text-xs text-text-muted italic">No expenses recorded.</p>
+                                ) : (
+                                  <Stagger className="space-y-2">
+                                    {statement.expenses.map((exp) => (
+                                      <m.div
+                                        key={exp.expenseId}
+                                        variants={listItem}
+                                        className="p-3 rounded-xl bg-surface border border-border text-xs flex items-center justify-between gap-3 shadow-xs"
+                                      >
+                                        <div>
+                                          <h5 className="font-bold text-text">{exp.title}</h5>
+                                          <p className="text-[11px] text-text-muted">
+                                            {formatDate(exp.date)} • Paid by {exp.paidBy} (Total {formatINR(exp.totalAmount)})
+                                          </p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                          <span className="text-[10px] uppercase font-semibold text-text-muted block">
+                                            Your Share
+                                          </span>
+                                          <span className="font-extrabold text-text font-mono tabular-nums">
+                                            {formatINR(exp.personShare)}
+                                          </span>
+                                        </div>
+                                      </m.div>
+                                    ))}
+                                  </Stagger>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
+                            </>
+                          )}
+                        </div>
+                      </m.div>
+                    )}
+                  </AnimatePresence>
+                </m.div>
               );
             })}
           </div>
@@ -663,18 +688,29 @@ export default function FriendDashboardPage() {
       >
         {activeProfileForPayment && (
           <form onSubmit={handleSubmitPayment} className="space-y-4">
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-              <span className="text-slate-400 block">Submitting repayment for</span>
-              <strong className="text-white block mt-0.5">
+            <div className="p-3 rounded-xl bg-surface-raised border border-border text-xs">
+              <span className="text-text-muted block">Submitting repayment for</span>
+              <strong className="text-text block mt-0.5">
                 {activeProfileForPayment.group.name} ({activeProfileForPayment.person.name})
               </strong>
-              <span className="text-[11px] text-amber-400 mt-1 block">
-                Balance due: {formatINR(activeProfileForPayment.summary.remainingToPay)}
-              </span>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold block">
+                  Total dues: {formatINR(activeProfileForPayment.summary.remainingToPay)}
+                </span>
+                {activeProfileForPayment.summary.remainingToPay > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentAmount((activeProfileForPayment.summary.remainingToPay / 100).toFixed(2))}
+                    className="text-[10px] font-bold text-brand-600 dark:text-brand-400 hover:underline cursor-pointer"
+                  >
+                    Fill Full Dues
+                  </button>
+                )}
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Amount (₹) *
               </label>
               <input
@@ -686,19 +722,19 @@ export default function FriendDashboardPage() {
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
                 placeholder="500.00"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text placeholder-text-muted text-sm font-semibold focus:outline-none focus:border-brand-500 font-mono tabular-nums"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                   Payment Mode *
                 </label>
                 <select
                   value={paymentMode}
                   onChange={(e) => setPaymentMode(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text text-xs focus:outline-none focus:border-brand-500"
                 >
                   <option value="online">Online (UPI / Bank Transfer)</option>
                   <option value="cash">Cash</option>
@@ -706,7 +742,7 @@ export default function FriendDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                   Payment Date *
                 </label>
                 <input
@@ -714,13 +750,13 @@ export default function FriendDashboardPage() {
                   required
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text text-xs focus:outline-none focus:border-brand-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Transaction Reference / UTR (Optional)
               </label>
               <input
@@ -728,12 +764,12 @@ export default function FriendDashboardPage() {
                 value={paymentRef}
                 onChange={(e) => setPaymentRef(e.target.value)}
                 placeholder="e.g. UPI Ref 3249019283"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text placeholder-text-muted text-xs focus:outline-none focus:border-brand-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Note / Description (Optional)
               </label>
               <input
@@ -741,26 +777,26 @@ export default function FriendDashboardPage() {
                 value={paymentDesc}
                 onChange={(e) => setPaymentDesc(e.target.value)}
                 placeholder="e.g. Paid for dinner & cab"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text placeholder-text-muted text-xs focus:outline-none focus:border-brand-500"
               />
             </div>
 
-            <p className="text-[11px] text-slate-400">
-              💡 This repayment will be marked as <strong className="text-amber-400">Pending</strong> until the group host approves and applies it to balances.
+            <p className="text-[11px] text-text-muted">
+              💡 This repayment will be marked as <strong className="text-amber-600 dark:text-amber-400">Pending</strong> until the group host approves and applies it to balances.
             </p>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
               <button
                 type="button"
                 onClick={() => setSubmitModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-text-muted hover:text-text transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submittingPayment}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition flex items-center gap-1.5 disabled:opacity-50"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
               >
                 {submittingPayment ? (
                   <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
@@ -781,13 +817,13 @@ export default function FriendDashboardPage() {
       >
         {resubmitPayment && (
           <form onSubmit={handleResubmit} className="space-y-4">
-            <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-xs text-rose-300">
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-700 dark:text-rose-300">
               <span className="font-bold block">Previous Rejection Reason:</span>
               <p className="mt-0.5">{resubmitPayment.rejectReason || 'No reason provided by host'}</p>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Amount (₹) *
               </label>
               <input
@@ -798,26 +834,40 @@ export default function FriendDashboardPage() {
                 data-amount-input="true"
                 value={resubmitAmount}
                 onChange={(e) => setResubmitAmount(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text text-sm font-semibold focus:outline-none focus:border-brand-500 font-mono tabular-nums"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                Payment Mode *
-              </label>
-              <select
-                value={resubmitMode}
-                onChange={(e) => setResubmitMode(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
-              >
-                <option value="online">Online (UPI / Bank Transfer)</option>
-                <option value="cash">Cash</option>
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
+                  Payment Mode *
+                </label>
+                <select
+                  value={resubmitMode}
+                  onChange={(e) => setResubmitMode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text text-xs focus:outline-none focus:border-brand-500"
+                >
+                  <option value="online">Online (UPI / Bank Transfer)</option>
+                  <option value="cash">Cash</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
+                  Payment Date *
+                </label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text text-xs focus:outline-none focus:border-brand-500"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Transaction Reference / UTR
               </label>
               <input
@@ -825,12 +875,12 @@ export default function FriendDashboardPage() {
                 value={resubmitRef}
                 onChange={(e) => setResubmitRef(e.target.value)}
                 placeholder="Updated transaction ID or reference"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text placeholder-text-muted text-xs focus:outline-none focus:border-brand-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Note / Clarification
               </label>
               <input
@@ -838,22 +888,22 @@ export default function FriendDashboardPage() {
                 value={resubmitDesc}
                 onChange={(e) => setResubmitDesc(e.target.value)}
                 placeholder="Add clarification for the host"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-text placeholder-text-muted text-xs focus:outline-none focus:border-brand-500"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
               <button
                 type="button"
                 onClick={() => setResubmitModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-text-muted hover:text-text transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={resubmitting}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition flex items-center gap-1.5 disabled:opacity-50"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
               >
                 {resubmitting ? (
                   <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
@@ -874,19 +924,19 @@ export default function FriendDashboardPage() {
         size="lg"
       >
         {loadingGroupBills ? (
-          <div className="py-12 flex flex-col justify-center items-center gap-3 text-xs text-slate-400">
+          <div className="py-12 flex flex-col justify-center items-center gap-3 text-xs text-text-muted">
             <div className="w-5 h-5 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
             <span>Loading group bills...</span>
           </div>
         ) : !groupBillsData ? (
-          <p className="text-xs text-slate-400 text-center py-8">
+          <p className="text-xs text-text-muted text-center py-8">
             Failed to load group bills.
           </p>
         ) : (
           <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
             {/* Group Members List */}
-            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+            <div className="p-3.5 rounded-xl bg-surface-raised border border-border space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted block">
                 Group Members ({groupBillsData.members?.length || 0})
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -895,12 +945,12 @@ export default function FriendDashboardPage() {
                     key={m.id}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border ${
                       m.isHost
-                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                        : 'bg-slate-800 border-slate-700 text-slate-300'
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300'
+                        : 'bg-surface border-border text-text'
                     }`}
                   >
                     {m.name}
-                    {m.isHost && <span className="text-[10px] text-amber-400 font-bold">(Host)</span>}
+                    {m.isHost && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">(Host)</span>}
                   </span>
                 ))}
               </div>
@@ -909,13 +959,13 @@ export default function FriendDashboardPage() {
             {/* Expenses Breakdown */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                <span className="text-xs font-bold uppercase tracking-wider text-text">
                   Group Expenses ({groupBillsData.expenses?.length || 0})
                 </span>
               </div>
 
               {groupBillsData.expenses?.length === 0 ? (
-                <p className="text-xs text-slate-500 italic py-4 text-center">
+                <p className="text-xs text-text-muted italic py-4 text-center">
                   No expenses have been recorded for this group yet.
                 </p>
               ) : (
@@ -923,15 +973,15 @@ export default function FriendDashboardPage() {
                   {groupBillsData.expenses?.map((exp) => (
                     <div
                       key={exp.id}
-                      className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3"
+                      className="p-4 rounded-xl bg-surface border border-border space-y-3 shadow-xs"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-0.5">
-                          <h4 className="text-sm font-bold text-white">{exp.title}</h4>
-                          <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
+                          <h4 className="text-sm font-bold text-text">{exp.title}</h4>
+                          <div className="flex items-center gap-2 text-xs text-text-muted flex-wrap">
                             <span>{formatDate(exp.date)}</span>
                             <span>•</span>
-                            <span>Paid by <strong className="text-slate-200">{exp.paidByName}</strong></span>
+                            <span>Paid by <strong className="text-text font-semibold">{exp.paidByName}</strong></span>
                             {exp.splitType && (
                               <>
                                 <span>•</span>
@@ -940,19 +990,19 @@ export default function FriendDashboardPage() {
                             )}
                           </div>
                           {exp.description && (
-                            <p className="text-xs text-slate-400 pt-1">{exp.description}</p>
+                            <p className="text-xs text-text-muted pt-1">{exp.description}</p>
                           )}
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="text-base font-black text-brand-400 font-mono">
+                          <span className="text-base font-black text-brand-600 dark:text-brand-400 font-mono tabular-nums">
                             {formatINR(exp.totalAmount)}
                           </span>
                         </div>
                       </div>
 
                       {/* Splits breakdown among members */}
-                      <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                      <div className="pt-2 border-t border-border space-y-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted block">
                           Splits Breakdown
                         </span>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -961,15 +1011,15 @@ export default function FriendDashboardPage() {
                               key={idx}
                               className={`p-2 rounded-lg text-xs border ${
                                 s.isMine
-                                  ? 'bg-brand-500/10 border-brand-500/30 text-brand-300'
-                                  : 'bg-slate-950/60 border-slate-800 text-slate-300'
+                                  ? 'bg-brand-500/10 border-brand-500/30 text-brand-700 dark:text-brand-300'
+                                  : 'bg-surface-raised border-border text-text'
                               }`}
                             >
                               <div className="flex items-center justify-between gap-1">
                                 <span className="font-semibold truncate">
                                   {s.memberName} {s.isMine && '(You)'}
                                 </span>
-                                <span className="font-mono font-bold text-white shrink-0">
+                                <span className="font-mono font-bold text-text shrink-0 tabular-nums">
                                   {formatINR(s.shareAmount)}
                                 </span>
                               </div>

@@ -7,6 +7,8 @@ import ThemeToggle from '../components/common/ThemeToggle.jsx';
 import Button from '../components/common/Button.jsx';
 import Input from '../components/common/Input.jsx';
 import { Card } from '../components/common/Card.jsx';
+import { m, AnimatePresence } from 'motion/react';
+import { springs } from '../motion/tokens.js';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -78,13 +80,21 @@ export default function RegisterPage() {
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <Card className="space-y-4">
-          {errorMessage && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
+        <Card className="space-y-4 animate-scale-in">
+          <AnimatePresence>
+            {errorMessage && (
+              <m.div
+                initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                transition={springs.snappy}
+                className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2"
+              >
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMessage}</span>
+              </m.div>
+            )}
+          </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input

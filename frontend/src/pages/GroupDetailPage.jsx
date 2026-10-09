@@ -14,6 +14,7 @@ import AddExpenseModal from '../components/forms/AddExpenseModal.jsx';
 import AddPaymentModal from '../components/forms/AddPaymentModal.jsx';
 import PersonCopyDropdown from '../components/common/PersonCopyDropdown.jsx';
 import api from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { formatINR, getBalanceVisuals } from '../utils/currency.js';
 import { formatDate } from '../utils/date.js';
@@ -39,9 +40,14 @@ import {
   Link2,
   Eye,
 } from 'lucide-react';
+import { m } from 'motion/react';
+import { springs } from '../motion/tokens.js';
+import { Stagger } from '../motion/components.jsx';
+import { listItem } from '../motion/variants.js';
 
 export default function GroupDetailPage() {
   const { groupId } = useParams();
+  const { user } = useAuth();
   const { addToast } = useToast();
 
   const [group, setGroup] = useState(null);
@@ -59,6 +65,10 @@ export default function GroupDetailPage() {
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentModalDefaults, setPaymentModalDefaults] = useState({
+    fromPersonId: null,
+    toPersonId: null,
+  });
 
   // Payment accept/reject states
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -185,8 +195,25 @@ export default function GroupDetailPage() {
     setIsExpenseModalOpen(true);
   };
 
-  const openPaymentForPerson = (personId) => {
-    setSelectedPersonForAction(personId);
+  const openPaymentForPerson = (targetPersonId) => {
+    const hostPerson = people.find((p) => p.isHost);
+    const currentPerson = people.find((p) => p.linkedUserId === user?.id);
+
+    if (!isHost && currentPerson) {
+      const targetRecipient =
+        targetPersonId && targetPersonId !== currentPerson.id
+          ? targetPersonId
+          : hostPerson?.id || people.find((p) => p.id !== currentPerson.id)?.id || null;
+      setPaymentModalDefaults({
+        fromPersonId: currentPerson.id,
+        toPersonId: targetRecipient,
+      });
+    } else {
+      setPaymentModalDefaults({
+        fromPersonId: targetPersonId || null,
+        toPersonId: hostPerson?.id || null,
+      });
+    }
     setIsPaymentModalOpen(true);
   };
 
@@ -230,8 +257,8 @@ ${balanceLine}`);
       if (res.success) {
         addToast(
           newStatus
-            ? `Granted ${person.name} permission to view all group bills`
-            : `Revoked full bill visibility for ${person.name}`,
+            ? `Granted ${person.name} card visibility in group`
+            : `Set ${person.name} card to hidden from other members (default)`,
           'success'
         );
       } else {
@@ -279,10 +306,15 @@ ${balanceLine}`);
   }
 
   const hostPerson = people.find((p) => p.isHost);
-  const friendPersons = people.filter((p) => !p.isHost);
+  const currentPerson = people.find((p) => p.linkedUserId === user?.id);
+
+  // Requirement 1: Show only his and host card by default; other friends' cards become visible when host gives them permission
+  const visiblePeople = isHost
+    ? people
+    : people.filter((p) => p.isHost || p.id === currentPerson?.id || p.canViewAllBills);
 
   const tabList = [
-    { id: 'people', label: 'People', icon: Users, count: people.length },
+    { id: 'people', label: 'People', icon: Users, count: visiblePeople.length },
     { id: 'expenses', label: 'Expenses', icon: Receipt, count: expenses.length },
     {
       id: 'payments',
@@ -326,7 +358,7 @@ ${balanceLine}`);
             </div>
           )}
 
-          {group.status === 'active' && (
+          {isHost && group.status === 'active' && (
             <div className="flex items-center gap-2">
               <Button
                 size="xs"
@@ -372,29 +404,43 @@ ${balanceLine}`);
             )}
           </div>
 
-          {/* Group-level action buttons */}
+          {/* Group-level action buttons (Requirement 2 & 3: show only authorized buttons) */}
           <div className="flex items-center gap-2 shrink-0">
             {group.status === 'active' ? (
               <>
-                <Button
-                  onClick={() => {
-                    setSelectedPersonForAction(null);
-                    setIsExpenseModalOpen(true);
-                  }}
-                  variant="primary"
-                  size="sm"
-                  iconLeft={<Plus className="w-4 h-4 font-bold" />}
-                >
-                  Add Expense
-                </Button>
-                <Button
-                  onClick={() => setIsPersonModalOpen(true)}
-                  variant="secondary"
-                  size="sm"
-                  iconLeft={<Users className="w-3.5 h-3.5 text-text-muted" />}
-                >
-                  Add Person
-                </Button>
+                {isHost && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        setSelectedPersonForAction(null);
+                        setIsExpenseModalOpen(true);
+                      }}
+                      variant="primary"
+                      size="sm"
+                      iconLeft={<Plus className="w-4 h-4 font-bold" />}
+                    >
+                      Add Expense
+                    </Button>
+                    <Button
+                      onClick={() => setIsPersonModalOpen(true)}
+                      variant="secondary"
+                      size="sm"
+                      iconLeft={<Users className="w-3.5 h-3.5 text-text-muted" />}
+                    >
+                      Add Person
+                    </Button>
+                  </>
+                )}
+                {!isHost && currentPerson && (
+                  <Button
+                    onClick={() => openPaymentForPerson(hostPerson?.id || null)}
+                    variant="primary"
+                    size="sm"
+                    iconLeft={<CreditCard className="w-4 h-4 font-bold" />}
+                  >
+                    Submit Payment
+                  </Button>
+                )}
                 {isHost && summary?.isSettledReady && (
                   <Button
                     onClick={() => setSettleDialogOpen(true)}
@@ -423,73 +469,81 @@ ${balanceLine}`);
 
         {/* Ledger Summary Cards Bento */}
         {summary && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <Card className="p-4 space-y-1">
-              <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
-                Total Spent
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-text mt-1 block font-mono tabular-nums">
-                {formatINR(summary.totalSpent)}
-              </span>
-              <span className="text-[11px] text-text-muted block">
-                Across {expenses.length} recorded expenses
-              </span>
-            </Card>
+          <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <m.div variants={listItem}>
+              <Card interactive tint="neutral" className="p-4 space-y-1">
+                <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
+                  Total Spent
+                </span>
+                <span className="text-xl sm:text-2xl font-black text-text mt-1 block font-mono tabular-nums">
+                  {formatINR(summary.totalSpent)}
+                </span>
+                <span className="text-[11px] text-text-muted block">
+                  Across {expenses.length} recorded expenses
+                </span>
+              </Card>
+            </m.div>
 
-            <Card className="p-4 space-y-1">
-              <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
-                Total Repaid
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block font-mono tabular-nums">
-                {formatINR(summary.totalReceived)}
-              </span>
-              <span className="text-[11px] text-text-muted block">
-                Settled to host ledger
-              </span>
-            </Card>
+            <m.div variants={listItem}>
+              <Card interactive tint="success" className="p-4 space-y-1">
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
+                  Total Repaid
+                </span>
+                <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block font-mono tabular-nums">
+                  {formatINR(summary.totalReceived)}
+                </span>
+                <span className="text-[11px] text-text-muted block">
+                  Settled to host ledger
+                </span>
+              </Card>
+            </m.div>
 
-            <Card className="p-4 space-y-1">
-              <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
-                Pending Approvals
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 mt-1 block font-mono tabular-nums">
-                {formatINR(summary.totalPending)}
-              </span>
-              <span className="text-[11px] text-text-muted block">
-                Awaiting host review
-              </span>
-            </Card>
+            <m.div variants={listItem}>
+              <Card interactive tint="warning" className="p-4 space-y-1">
+                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
+                  Pending Approvals
+                </span>
+                <span className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 mt-1 block font-mono tabular-nums">
+                  {formatINR(summary.totalPending)}
+                </span>
+                <span className="text-[11px] text-text-muted block">
+                  Awaiting host review
+                </span>
+              </Card>
+            </m.div>
 
-            <Card className="p-4 space-y-1">
-              <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
-                Host Net Balance
-              </span>
-              {hostPerson && (
-                <>
-                  <span
-                    className={`text-xl sm:text-2xl font-black mt-1 block font-mono tabular-nums ${
-                      hostPerson.net > 0
-                        ? 'text-emerald-600 dark:text-emerald-400'
+            <m.div variants={listItem}>
+              <Card interactive tint="neutral" className="p-4 space-y-1">
+                <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
+                  Host Net Balance
+                </span>
+                {hostPerson && (
+                  <>
+                    <span
+                      className={`text-xl sm:text-2xl font-black mt-1 block font-mono tabular-nums ${
+                        hostPerson.net > 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : hostPerson.net < 0
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : 'text-text-muted'
+                      }`}
+                    >
+                      {hostPerson.net > 0
+                        ? `+${formatINR(hostPerson.net)}`
+                        : formatINR(hostPerson.net)}
+                    </span>
+                    <span className="text-[11px] text-text-muted block truncate">
+                      {hostPerson.net > 0
+                        ? 'Friends owe you'
                         : hostPerson.net < 0
-                        ? 'text-rose-600 dark:text-rose-400'
-                        : 'text-text-muted'
-                    }`}
-                  >
-                    {hostPerson.net > 0
-                      ? `+${formatINR(hostPerson.net)}`
-                      : formatINR(hostPerson.net)}
-                  </span>
-                  <span className="text-[11px] text-text-muted block truncate">
-                    {hostPerson.net > 0
-                      ? 'Friends owe you'
-                      : hostPerson.net < 0
-                      ? 'You owe the group'
-                      : 'All settled'}
-                  </span>
-                </>
-              )}
-            </Card>
-          </div>
+                        ? 'You owe the group'
+                        : 'All settled'}
+                    </span>
+                  </>
+                )}
+              </Card>
+            </m.div>
+          </Stagger>
         )}
 
         {/* Repayment Progress Meter */}
@@ -547,31 +601,37 @@ ${balanceLine}`);
 
         {/* TAB 1: People & Balances */}
         {activeTab === 'people' && (
-          <div className="space-y-4">
-            {people.length === 0 ? (
+          <div className="space-y-4 animate-fade-in">
+            {visiblePeople.length === 0 ? (
               <EmptyState
                 icon={<Users className="w-6 h-6 text-text-muted" />}
-                title="No members added"
-                description="Add friends to this group to start dividing expenses and sharing statements."
-                actionText="Add Person"
-                actionIcon={<Plus className="w-3.5 h-3.5" />}
-                onAction={() => setIsPersonModalOpen(true)}
+                title="No members visible"
+                description={
+                  isHost
+                    ? "Add friends to this group to start dividing expenses and sharing statements."
+                    : "No other members visible in this group."
+                }
+                actionText={isHost ? "Add Person" : null}
+                actionIcon={isHost ? <Plus className="w-3.5 h-3.5" /> : null}
+                onAction={isHost ? () => setIsPersonModalOpen(true) : undefined}
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {people.map((person) => {
+              <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {visiblePeople.map((person) => {
                   const owesMoney = person.remainingToPay > 0;
                   const isOwed = person.groupOwesYou > 0;
+                  const personTint = owesMoney ? 'danger' : isOwed ? 'success' : 'neutral';
                   const initials = person.name
                     ? person.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
                     : 'U';
 
                   return (
-                    <Card
-                      key={person.id}
-                      hover
-                      className="flex flex-col justify-between space-y-4"
-                    >
+                    <m.div key={person.id} variants={listItem}>
+                      <Card
+                        interactive
+                        tint={personTint}
+                        className="flex flex-col justify-between space-y-4 h-full"
+                      >
                       {/* Header with Avatar, Name, Phone and Share Dropdown */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
@@ -665,43 +725,49 @@ ${balanceLine}`);
                           <div className="flex items-center gap-2 min-w-0">
                             <Eye className={`w-3.5 h-3.5 shrink-0 ${person.canViewAllBills ? 'text-brand-500' : 'text-text-muted'}`} />
                             <div className="flex flex-col min-w-0">
-                              <span className="font-semibold text-text text-[11px] truncate">Can view all group bills</span>
+                              <span className="font-semibold text-text text-[11px] truncate">Card & bills visible to group</span>
                               <span className="text-[10px] text-text-muted truncate">
-                                {person.canViewAllBills ? 'Full bill visibility granted' : 'Own bills only (default)'}
+                                {person.canViewAllBills ? 'Visible to other members in group' : 'Hidden from other members (default)'}
                               </span>
                             </div>
                           </div>
-                          <button
+                          <m.button
                             type="button"
                             role="switch"
+                            whileTap={{ scale: 0.94 }}
+                            transition={springs.snappy}
                             aria-checked={Boolean(person.canViewAllBills)}
-                            aria-label={`Toggle full bill visibility for ${person.name}`}
+                            aria-label={`Toggle visibility for ${person.name}`}
                             onClick={() => handleToggleBillVisibility(person)}
                             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500/40 ${
                               person.canViewAllBills ? 'bg-brand-500' : 'bg-surface-raised border-border'
                             }`}
                           >
-                            <span
+                            <m.span
+                              layout
+                              transition={springs.snappy}
                               aria-hidden="true"
-                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-xs ${
                                 person.canViewAllBills ? 'translate-x-4' : 'translate-x-0'
                               }`}
                             />
-                          </button>
+                          </m.button>
                         </div>
                       )}
 
-                      {/* Contextual Action Buttons */}
+                      {/* Contextual Action Buttons (Requirement 2: show only authorized buttons) */}
                       <div className="flex items-center justify-between gap-2 pt-2 border-t border-border flex-wrap">
                         {group.status === 'active' && (
                           <div className="flex items-center gap-1.5 flex-1">
-                            <Button
-                              size="xs"
-                              variant="secondary"
-                              onClick={() => openExpenseForPerson(person.id)}
-                            >
-                              + Expense
-                            </Button>
+                            {isHost && (
+                              <Button
+                                size="xs"
+                                variant="secondary"
+                                onClick={() => openExpenseForPerson(person.id)}
+                              >
+                                + Expense
+                              </Button>
+                            )}
                             <Button
                               size="xs"
                               variant="secondary"
@@ -722,25 +788,26 @@ ${balanceLine}`);
                           >
                             WhatsApp
                           </Button>
-                          <PersonCopyDropdown group={group} person={person} />
+                          <PersonCopyDropdown group={group} person={person} isHost={isHost} />
                         </div>
                       </div>
                     </Card>
-                  );
-                })}
-              </div>
-            )}
+                  </m.div>
+                );
+              })}
+            </Stagger>
+          )}
           </div>
         )}
 
         {/* TAB 2: Expenses */}
         {activeTab === 'expenses' && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
               <span className="text-xs text-text-muted font-medium">
                 Chronological list of group expenses
               </span>
-              {group.status === 'active' && (
+              {isHost && group.status === 'active' && (
                 <Button
                   size="xs"
                   variant="primary"
@@ -759,59 +826,69 @@ ${balanceLine}`);
               <EmptyState
                 icon={<Receipt className="w-6 h-6 text-text-muted" />}
                 title="No expenses recorded"
-                description="Add the first expense to begin splitting costs among group members."
-                actionText="Add Expense"
-                actionIcon={<Plus className="w-3.5 h-3.5" />}
-                onAction={() => {
-                  setSelectedPersonForAction(null);
-                  setIsExpenseModalOpen(true);
-                }}
+                description={
+                  isHost
+                    ? "Add the first expense to begin splitting costs among group members."
+                    : "No expenses recorded yet in this group."
+                }
+                actionText={isHost ? "Add Expense" : null}
+                actionIcon={isHost ? <Plus className="w-3.5 h-3.5" /> : null}
+                onAction={
+                  isHost
+                    ? () => {
+                        setSelectedPersonForAction(null);
+                        setIsExpenseModalOpen(true);
+                      }
+                    : undefined
+                }
               />
             ) : (
-              <div className="space-y-3">
+              <Stagger className="space-y-3">
                 {expenses.map((exp) => (
-                  <Card
-                    key={exp.id}
-                    hover
-                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-text">{exp.title}</h4>
-                        <Badge variant="info" size="xs">
-                          {exp.splitType}
-                        </Badge>
+                  <m.div key={exp.id} variants={listItem}>
+                    <Card
+                      interactive
+                      tint="brand"
+                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-sm text-text">{exp.title}</h4>
+                          <Badge variant="info" size="xs">
+                            {exp.splitType}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-text-muted">
+                          Paid by{' '}
+                          <span className="text-text font-medium">
+                            {exp.paidByPerson?.name}
+                          </span>{' '}
+                          on {formatDate(exp.date)}
+                        </p>
+                        {exp.description && (
+                          <p className="text-[11px] text-text-muted">{exp.description}</p>
+                        )}
                       </div>
-                      <p className="text-xs text-text-muted">
-                        Paid by{' '}
-                        <span className="text-text font-medium">
-                          {exp.paidByPerson?.name}
-                        </span>{' '}
-                        on {formatDate(exp.date)}
-                      </p>
-                      {exp.description && (
-                        <p className="text-[11px] text-text-muted">{exp.description}</p>
-                      )}
-                    </div>
 
-                    <div className="text-left sm:text-right shrink-0">
-                      <span className="text-base font-extrabold text-text block font-mono tabular-nums">
-                        {formatINR(exp.totalAmount)}
-                      </span>
-                      <span className="text-[11px] text-text-muted">
-                        Split with {exp.splits?.length || 0} members
-                      </span>
-                    </div>
-                  </Card>
+                      <div className="text-left sm:text-right shrink-0">
+                        <span className="text-base font-extrabold text-text block font-mono tabular-nums">
+                          {formatINR(exp.totalAmount)}
+                        </span>
+                        <span className="text-[11px] text-text-muted">
+                          Split with {exp.splits?.length || 0} members
+                        </span>
+                      </div>
+                    </Card>
+                  </m.div>
                 ))}
-              </div>
+              </Stagger>
             )}
           </div>
         )}
 
         {/* TAB 3: Payments */}
         {activeTab === 'payments' && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
               <span className="text-xs text-text-muted font-medium">
                 Repayment history and submitted payments
@@ -820,13 +897,10 @@ ${balanceLine}`);
                 <Button
                   size="xs"
                   variant="primary"
-                  onClick={() => {
-                    setSelectedPersonForAction(null);
-                    setIsPaymentModalOpen(true);
-                  }}
+                  onClick={() => openPaymentForPerson(null)}
                   iconLeft={<Plus className="w-3.5 h-3.5" />}
                 >
-                  Record Payment
+                  {isHost ? 'Record Payment' : 'Submit Payment'}
                 </Button>
               )}
             </div>
@@ -835,119 +909,126 @@ ${balanceLine}`);
               <EmptyState
                 icon={<CreditCard className="w-6 h-6 text-text-muted" />}
                 title="No payments recorded"
-                description="When a friend pays cash or online, record it here to credit their balance."
-                actionText="Record Payment"
+                description={
+                  isHost
+                    ? "When a friend pays cash or online, record it here to credit their balance."
+                    : "When you make a repayment, submit it here for host approval."
+                }
+                actionText={isHost ? "Record Payment" : "Submit Payment"}
                 actionIcon={<Plus className="w-3.5 h-3.5" />}
-                onAction={() => {
-                  setSelectedPersonForAction(null);
-                  setIsPaymentModalOpen(true);
-                }}
+                onAction={() => openPaymentForPerson(null)}
               />
             ) : (
-              <div className="space-y-3">
+              <Stagger className="space-y-3">
                 {payments.map((pay) => {
                   const isAccepted = pay.status === 'accepted';
                   const isPending = pay.status === 'pending';
                   const isRejected = pay.status === 'rejected';
+                  const payTint = isAccepted ? 'success' : isPending ? 'warning' : 'danger';
 
                   return (
-                    <Card
-                      key={pay.id}
-                      hover
-                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-bold text-sm text-text">
-                            {pay.fromPerson?.name} → {pay.toPerson?.name}
-                          </h4>
-                          <Badge
-                            variant={isAccepted ? 'accepted' : isPending ? 'pending' : 'rejected'}
-                            size="xs"
-                            showIcon
-                          >
-                            {pay.status}
-                          </Badge>
-                          <span className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">
-                            {pay.mode}
-                          </span>
+                    <m.div key={pay.id} variants={listItem}>
+                      <Card
+                        interactive
+                        tint={payTint}
+                        className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-bold text-sm text-text">
+                              {pay.fromPerson?.name} → {pay.toPerson?.name}
+                            </h4>
+                            <Badge
+                              variant={isAccepted ? 'accepted' : isPending ? 'pending' : 'rejected'}
+                              size="xs"
+                              showIcon
+                            >
+                              {pay.status}
+                            </Badge>
+                            <span className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">
+                              {pay.mode}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-text-muted">
+                            {formatDate(pay.date)}{' '}
+                            {pay.reference && (
+                              <span className="text-text-muted font-mono text-[11px]">
+                                • Ref: {pay.reference}
+                              </span>
+                            )}
+                          </p>
+                          {pay.description && (
+                            <p className="text-[11px] text-text-muted">{pay.description}</p>
+                          )}
+                          {isRejected && pay.rejectReason && (
+                            <p className="text-[11px] text-rose-500 dark:text-rose-400 font-medium">
+                              Reason: {pay.rejectReason}
+                            </p>
+                          )}
                         </div>
 
-                        <p className="text-xs text-text-muted">
-                          {formatDate(pay.date)}{' '}
-                          {pay.reference && (
-                            <span className="text-text-muted font-mono text-[11px]">
-                              • Ref: {pay.reference}
-                            </span>
+                        <div className="text-left sm:text-right shrink-0 space-y-2">
+                          <span
+                            className={`text-base font-extrabold block font-mono tabular-nums ${
+                              isAccepted
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : isPending
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-text-muted line-through'
+                            }`}
+                          >
+                            {formatINR(pay.amount)}
+                          </span>
+
+                          {isPending && isHost && group.status === 'active' && (
+                            <div className="flex items-center gap-1.5 justify-start sm:justify-end">
+                              <Button
+                                size="xs"
+                                variant="success"
+                                onClick={() => handleAcceptPayment(pay.id)}
+                                loading={acceptingId === pay.id}
+                                iconLeft={<Check className="w-3.5 h-3.5" />}
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                size="xs"
+                                variant="danger"
+                                onClick={() => handleOpenRejectModal(pay)}
+                                iconLeft={<X className="w-3.5 h-3.5" />}
+                              >
+                                Reject
+                              </Button>
+                            </div>
                           )}
-                        </p>
-                        {pay.description && (
-                          <p className="text-[11px] text-text-muted">{pay.description}</p>
-                        )}
-                        {isRejected && pay.rejectReason && (
-                          <p className="text-[11px] text-rose-500 dark:text-rose-400 font-medium">
-                            Reason: {pay.rejectReason}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="text-left sm:text-right shrink-0 space-y-2">
-                        <span
-                          className={`text-base font-extrabold block font-mono tabular-nums ${
-                            isAccepted
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : isPending
-                              ? 'text-amber-600 dark:text-amber-400'
-                              : 'text-text-muted line-through'
-                          }`}
-                        >
-                          {formatINR(pay.amount)}
-                        </span>
-
-                        {isPending && isHost && group.status === 'active' && (
-                          <div className="flex items-center gap-1.5 justify-start sm:justify-end">
-                            <Button
-                              size="xs"
-                              variant="success"
-                              onClick={() => handleAcceptPayment(pay.id)}
-                              loading={acceptingId === pay.id}
-                              iconLeft={<Check className="w-3 h-3" />}
-                            >
-                              Accept
-                            </Button>
-                            <Button
-                              size="xs"
-                              variant="danger"
-                              onClick={() => handleOpenRejectModal(pay)}
-                              iconLeft={<X className="w-3 h-3" />}
-                            >
-                              Reject
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
+                        </div>
+                      </Card>
+                    </m.div>
                   );
                 })}
-              </div>
+              </Stagger>
             )}
           </div>
         )}
       </main>
 
-      {/* Mobile Floating Action Button (FAB) */}
-      {group.status === 'active' && (
+      {/* Mobile Floating Action Button (FAB) - Host only */}
+      {isHost && group.status === 'active' && (
         <div className="fixed bottom-6 right-6 sm:hidden z-30 flex flex-col gap-2">
-          <button
+          <m.button
+            whileTap={{ scale: 0.92 }}
+            whileHover={{ scale: 1.05 }}
+            transition={springs.snappy}
             onClick={() => {
               setSelectedPersonForAction(null);
               setIsExpenseModalOpen(true);
             }}
             aria-label="Add Expense"
-            className="w-14 h-14 rounded-full bg-brand-500 text-slate-950 flex items-center justify-center shadow-2xl shadow-brand-500/50 hover:bg-brand-400 transition cursor-pointer active:scale-95"
+            className="w-14 h-14 rounded-full bg-brand-500 text-slate-950 flex items-center justify-center shadow-2xl shadow-brand-500/50 hover:bg-brand-400 transition-colors cursor-pointer"
           >
             <Plus className="w-6 h-6 font-black" />
-          </button>
+          </m.button>
         </div>
       )}
 
@@ -976,10 +1057,15 @@ ${balanceLine}`);
         onClose={() => {
           setIsPaymentModalOpen(false);
           setSelectedPersonForAction(null);
+          setPaymentModalDefaults({ fromPersonId: null, toPersonId: null });
         }}
         groupId={groupId}
-        people={people}
-        defaultFromPersonId={selectedPersonForAction}
+        people={isHost ? people : visiblePeople}
+        expenses={expenses}
+        defaultFromPersonId={paymentModalDefaults.fromPersonId || selectedPersonForAction}
+        defaultToPersonId={paymentModalDefaults.toPersonId}
+        isHost={isHost}
+        currentPerson={currentPerson}
         onPaymentAdded={() => fetchData()}
       />
 

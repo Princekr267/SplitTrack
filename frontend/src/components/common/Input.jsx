@@ -1,7 +1,10 @@
 import React, { forwardRef } from 'react';
+import { m, AnimatePresence } from 'motion/react';
+import { durations, easings } from '../../motion/tokens.js';
 
 /**
  * Modern, accessible Form Input component with label, helper hint, error state, and icon slots.
+ * Features physics-based error shake and smooth error message height transitions.
  */
 const Input = forwardRef(function Input(
   {
@@ -35,7 +38,11 @@ const Input = forwardRef(function Input(
         </div>
       )}
 
-      <div className="relative flex items-center">
+      <m.div
+        animate={error ? { x: [0, -6, 6, -4, 4, -2, 2, 0] } : { x: 0 }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
+        className="relative flex items-center"
+      >
         {leftIcon && (
           <div className="absolute left-3.5 flex items-center pointer-events-none text-text-muted">
             {leftIcon}
@@ -67,15 +74,33 @@ const Input = forwardRef(function Input(
             {rightIcon}
           </div>
         )}
-      </div>
+      </m.div>
 
-      {error ? (
-        <p className="text-[11px] font-medium text-rose-500 dark:text-rose-400 mt-1">
-          {error}
-        </p>
-      ) : hint ? (
-        <p className="text-[11px] text-text-muted mt-1">{hint}</p>
-      ) : null}
+      <AnimatePresence mode="wait">
+        {error ? (
+          <m.p
+            key="error"
+            initial={{ opacity: 0, y: -4, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -4, height: 0 }}
+            transition={{ duration: durations.fast, ease: easings.easeOut }}
+            className="text-[11px] font-medium text-rose-500 dark:text-rose-400 mt-1 overflow-hidden"
+          >
+            {error}
+          </m.p>
+        ) : hint ? (
+          <m.p
+            key="hint"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: durations.fast }}
+            className="text-[11px] text-text-muted mt-1"
+          >
+            {hint}
+          </m.p>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 });

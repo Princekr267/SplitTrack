@@ -22,6 +22,9 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
+import { m } from 'motion/react';
+import { Stagger, AnimatedNumber } from '../motion/components.jsx';
+import { listItem } from '../motion/variants.js';
 
 export default function HostDashboardPage() {
   const { user } = useAuth();
@@ -84,43 +87,49 @@ export default function HostDashboardPage() {
         {loading ? (
           <SkeletonStat count={3} />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            <Card className="p-4 space-y-1">
-              <span className="text-xs text-text-muted font-medium block">
-                Hosted Groups
-              </span>
-              <span className="text-2xl font-black text-text mt-1 block">
-                {hostedGroups.length}
-              </span>
-              <span className="text-[11px] text-text-muted block">
-                Trips and events organized by you
-              </span>
-            </Card>
+          <Stagger className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            <m.div variants={listItem}>
+              <Card interactive tint="neutral" className="p-4 space-y-1">
+                <span className="text-xs text-text-muted font-medium block">
+                  Hosted Groups
+                </span>
+                <span className="text-2xl font-black text-text mt-1 block font-mono tabular-nums">
+                  <AnimatedNumber value={hostedGroups.length} />
+                </span>
+                <span className="text-[11px] text-text-muted block">
+                  Trips and events organized by you
+                </span>
+              </Card>
+            </m.div>
 
-            <Card className="p-4 space-y-1">
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium block">
-                Active Ledgers
-              </span>
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block">
-                {totalActive}
-              </span>
-              <span className="text-[11px] text-text-muted block">
-                Currently tracking expenses
-              </span>
-            </Card>
+            <m.div variants={listItem}>
+              <Card interactive tint="success" className="p-4 space-y-1">
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium block">
+                  Active Ledgers
+                </span>
+                <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block font-mono tabular-nums">
+                  <AnimatedNumber value={totalActive} />
+                </span>
+                <span className="text-[11px] text-text-muted block">
+                  Currently tracking expenses
+                </span>
+              </Card>
+            </m.div>
 
-            <Card className="p-4 space-y-1 col-span-2 sm:col-span-1">
-              <span className="text-xs text-text-muted font-medium block">
-                Settled Groups
-              </span>
-              <span className="text-2xl font-black text-text-muted mt-1 block">
-                {totalSettled}
-              </span>
-              <span className="text-[11px] text-text-muted block">
-                Balances zeroed and locked
-              </span>
-            </Card>
-          </div>
+            <m.div variants={listItem} className="col-span-2 sm:col-span-1">
+              <Card interactive tint="neutral" className="p-4 space-y-1">
+                <span className="text-xs text-text-muted font-medium block">
+                  Settled Groups
+                </span>
+                <span className="text-2xl font-black text-text-muted mt-1 block font-mono tabular-nums">
+                  <AnimatedNumber value={totalSettled} />
+                </span>
+                <span className="text-[11px] text-text-muted block">
+                  Balances zeroed and locked
+                </span>
+              </Card>
+            </m.div>
+          </Stagger>
         )}
 
         {/* Error State with Retry */}
@@ -159,50 +168,51 @@ export default function HostDashboardPage() {
               onAction={() => setIsCreateOpen(true)}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {hostedGroups.map((g) => (
-                <Link
-                  key={g.id}
-                  to={`/groups/${g.id}`}
-                  className="group block"
-                >
-                  <Card hover className="h-full flex flex-col justify-between space-y-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-base text-text group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition truncate">
-                            {g.name}
-                          </h3>
-                          <Badge
-                            variant={g.status === 'active' ? 'active' : 'settled'}
-                            size="xs"
-                            showIcon
-                          >
-                            {g.status === 'active' ? 'Active' : 'Settled'}
-                          </Badge>
+                <m.div key={g.id} variants={listItem}>
+                  <Link
+                    to={`/groups/${g.id}`}
+                    className="group block h-full"
+                  >
+                    <Card interactive tint="neutral" className="h-full flex flex-col justify-between space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-base text-text group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition truncate">
+                              {g.name}
+                            </h3>
+                            <Badge
+                              variant={g.status === 'active' ? 'active' : 'settled'}
+                              size="xs"
+                              showIcon
+                            >
+                              {g.status === 'active' ? 'Active' : 'Settled'}
+                            </Badge>
+                          </div>
+                          {g.description && (
+                            <p className="text-xs text-text-muted line-clamp-2 leading-relaxed">
+                              {g.description}
+                            </p>
+                          )}
                         </div>
-                        {g.description && (
-                          <p className="text-xs text-text-muted line-clamp-2 leading-relaxed">
-                            {g.description}
-                          </p>
-                        )}
                       </div>
-                    </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-border text-xs text-text-muted">
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <Calendar className="w-3.5 h-3.5 text-text-muted" />
-                        {formatDate(g.date)}
-                      </span>
-                      <span className="font-semibold text-text group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition flex items-center gap-1 text-[11px]">
-                        Open Ledger
-                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                      </span>
-                    </div>
-                  </Card>
-                </Link>
+                      <div className="flex items-center justify-between pt-3 border-t border-border text-xs text-text-muted">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-text-muted" />
+                          {formatDate(g.date)}
+                        </span>
+                        <span className="font-semibold text-text group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition flex items-center gap-1 text-[11px]">
+                          Open Ledger
+                          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </div>
+                    </Card>
+                  </Link>
+                </m.div>
               ))}
-            </div>
+            </Stagger>
           )}
         </section>
 
@@ -214,37 +224,38 @@ export default function HostDashboardPage() {
               Groups You Belong To (Friend Profile)
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {memberGroups.map((g) => (
-                <Link
-                  key={g.id}
-                  to={`/groups/${g.id}`}
-                  className="group block"
-                >
-                  <Card hover className="h-full flex flex-col justify-between space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="font-bold text-base text-text group-hover:text-sky-500 transition truncate">
-                        {g.name}
-                      </h3>
-                      <Badge variant="info" size="xs">
-                        Member
-                      </Badge>
-                    </div>
+                <m.div key={g.id} variants={listItem}>
+                  <Link
+                    to={`/groups/${g.id}`}
+                    className="group block h-full"
+                  >
+                    <Card interactive tint="neutral" className="h-full flex flex-col justify-between space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-bold text-base text-text group-hover:text-sky-500 transition truncate">
+                          {g.name}
+                        </h3>
+                        <Badge variant="info" size="xs">
+                          Member
+                        </Badge>
+                      </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-border text-xs text-text-muted">
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-text-muted" />
-                        {formatDate(g.date)}
-                      </span>
-                      <span className="font-semibold text-text group-hover:text-sky-500 transition flex items-center gap-1 text-[11px]">
-                        View Statement
-                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                      </span>
-                    </div>
-                  </Card>
-                </Link>
+                      <div className="flex items-center justify-between pt-2 border-t border-border text-xs text-text-muted">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-text-muted" />
+                          {formatDate(g.date)}
+                        </span>
+                        <span className="font-semibold text-text group-hover:text-sky-500 transition flex items-center gap-1 text-[11px]">
+                          View Statement
+                          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </div>
+                    </Card>
+                  </Link>
+                </m.div>
               ))}
-            </div>
+            </Stagger>
           </section>
         )}
       </main>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
+import { m, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { springs, durations } from '../../motion/tokens.js';
 
 export default function ThemeToggle({ className = '', compact = false }) {
   const { theme, setTheme } = useTheme();
@@ -23,15 +25,28 @@ export default function ThemeToggle({ className = '', compact = false }) {
     const Icon = currentOption.icon;
 
     return (
-      <button
+      <m.button
         type="button"
+        whileTap={{ scale: 0.92 }}
+        transition={springs.snappy}
         onClick={cycleTheme}
         aria-label={`Current theme: ${currentOption.label}. Click to cycle.`}
         title={`Theme: ${currentOption.label}`}
-        className={`p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${className}`}
+        className={`relative p-2 rounded-xl text-text-muted hover:text-text bg-surface-raised hover:bg-surface border border-border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 overflow-hidden cursor-pointer ${className}`}
       >
-        <Icon className="w-4 h-4" />
-      </button>
+        <AnimatePresence mode="wait" initial={false}>
+          <m.span
+            key={theme}
+            initial={{ rotate: -70, scale: 0.6, opacity: 0 }}
+            animate={{ rotate: 0, scale: 1, opacity: 1 }}
+            exit={{ rotate: 70, scale: 0.6, opacity: 0 }}
+            transition={{ ...springs.snappy, duration: durations.fast }}
+            className="flex items-center justify-center"
+          >
+            <Icon className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+          </m.span>
+        </AnimatePresence>
+      </m.button>
     );
   }
 
@@ -39,29 +54,42 @@ export default function ThemeToggle({ className = '', compact = false }) {
     <div
       role="radiogroup"
       aria-label="Theme selection"
-      className={`inline-flex items-center gap-0.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 ${className}`}
+      className={`inline-flex items-center gap-0.5 p-1 rounded-xl bg-surface-raised border border-border ${className}`}
     >
       {options.map((opt) => {
         const Icon = opt.icon;
         const isSelected = theme === opt.id;
 
         return (
-          <button
+          <m.button
             key={opt.id}
             type="button"
             role="radio"
             aria-checked={isSelected}
             aria-label={opt.label}
             title={opt.label}
+            whileTap={{ scale: 0.93 }}
             onClick={() => setTheme(opt.id)}
-            className={`p-1.5 rounded-lg transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
-              isSelected
-                ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
+            className={`relative p-1.5 rounded-lg flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer ${
+              isSelected ? 'text-brand-600 dark:text-brand-400 font-bold' : 'text-text-muted hover:text-text'
             }`}
           >
-            <Icon className="w-3.5 h-3.5" />
-          </button>
+            {isSelected && (
+              <m.div
+                layoutId="theme-pill-indicator"
+                transition={springs.smooth}
+                style={{ borderRadius: 8 }}
+                className="absolute inset-0 bg-surface shadow-xs border border-border"
+              />
+            )}
+            <m.span
+              animate={{ scale: isSelected ? 1.05 : 1 }}
+              transition={springs.snappy}
+              className="relative z-10 flex items-center justify-center"
+            >
+              <Icon className="w-3.5 h-3.5" />
+            </m.span>
+          </m.button>
         );
       })}
     </div>

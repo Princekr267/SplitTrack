@@ -13,7 +13,7 @@ import {
   Lock,
   CheckCircle2,
 } from 'lucide-react';
-import ThemeToggle from '../components/common/ThemeToggle.jsx';
+import Navbar from '../components/common/Navbar.jsx';
 import Button from '../components/common/Button.jsx';
 import { Card } from '../components/common/Card.jsx';
 
@@ -22,43 +22,8 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-text flex flex-col transition-colors">
-      {/* Top Navbar */}
-      <header className="border-b border-border bg-surface/85 backdrop-blur-md sticky top-0 z-40 transition-colors">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-slate-950 shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
-              <Split className="w-5 h-5 font-bold" />
-            </div>
-            <span className="font-extrabold text-xl tracking-tight text-text">SplitTrack</span>
-          </Link>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <ThemeToggle />
-
-            {user ? (
-              <Link to="/dashboard">
-                <Button size="sm" variant="primary" iconRight={<ArrowRight className="w-3.5 h-3.5" />}>
-                  Dashboard
-                </Button>
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="px-3.5 py-2 rounded-xl text-xs font-semibold text-text-muted hover:text-text transition hidden sm:inline-block"
-                >
-                  Sign In
-                </Link>
-                <Link to="/register">
-                  <Button size="sm" variant="primary">
-                    Start Tracking
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      {/* Top Floating Navbar */}
+      <Navbar />
 
       {/* Hero Section */}
       <main className="flex-1">

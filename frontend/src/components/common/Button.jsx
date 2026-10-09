@@ -1,8 +1,14 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
+import { m, AnimatePresence } from 'motion/react';
+import { useHoverCapable } from '../../motion/useHoverCapable.js';
+import { springs, durations } from '../../motion/tokens.js';
 
 /**
- * Modern, accessible Button component with multiple variants, sizes, and loading state.
+ * Modern, accessible Button component with physics motion:
+ * - Rising fill on primary variant
+ * - Snappy tap compression (scale: 0.97)
+ * - Layout-stable crossfade for loading spinner
  */
 export default function Button({
   children,
@@ -18,14 +24,16 @@ export default function Button({
   onClick,
   ...props
 }) {
+  const isHoverCapable = useHoverCapable();
+
   const baseStyles =
-    'inline-flex items-center justify-center font-bold tracking-tight rounded-xl transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 select-none cursor-pointer';
+    'relative inline-flex items-center justify-center font-bold tracking-tight rounded-xl overflow-hidden transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer';
 
   const variants = {
     primary:
-      'bg-brand-500 hover:bg-brand-400 text-slate-950 shadow-md shadow-brand-500/20 hover:shadow-brand-500/30',
+      'bg-brand-500 text-slate-950 shadow-md shadow-brand-500/20 hover:shadow-brand-500/30',
     secondary:
-      'bg-surface-raised hover:bg-surface border border-border text-text hover:border-border/80 shadow-sm',
+      'bg-surface-raised hover:bg-surface border border-border text-text hover:border-border/80 shadow-xs',
     outline:
       'bg-transparent hover:bg-surface-raised border border-border text-text hover:text-text',
     ghost:
@@ -43,11 +51,22 @@ export default function Button({
     lg: 'text-sm sm:text-base px-5 py-2.5 min-h-[48px] gap-2.5',
   };
 
+  const isPrimary = variant === 'primary';
+
+  const layerVariants = {
+    idle: { y: '100%' },
+    hover: { y: '0%', transition: springs.smooth },
+  };
+
   return (
-    <button
+    <m.button
       type={type}
       disabled={disabled || loading}
+      aria-busy={loading}
       onClick={onClick}
+      initial="idle"
+      whileHover={isHoverCapable && isPrimary ? 'hover' : undefined}
+      whileTap={{ scale: 0.97, transition: springs.snappy }}
       className={`
         ${baseStyles}
         ${variants[variant] || variants.primary}
@@ -57,18 +76,45 @@ export default function Button({
       `}
       {...props}
     >
-      {loading ? (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-          <span>{children}</span>
-        </>
-      ) : (
-        <>
-          {iconLeft && <span className="shrink-0">{iconLeft}</span>}
-          <span>{children}</span>
-          {iconRight && <span className="shrink-0">{iconRight}</span>}
-        </>
+      {/* Primary variant rising color highlight layer */}
+      {isPrimary && (
+        <m.div
+          variants={layerVariants}
+          className="absolute inset-0 bg-brand-400 pointer-events-none rounded-xl"
+        />
       )}
-    </button>
+
+      {/* Button Content with smooth crossfade on loading */}
+      <div className="relative z-10 inline-flex items-center justify-center gap-1.5">
+        <AnimatePresence mode="wait" initial={false}>
+          {loading ? (
+            <m.div
+              key="loader"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: durations.fast }}
+              className="inline-flex items-center gap-1.5"
+            >
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              <span>{children}</span>
+            </m.div>
+          ) : (
+            <m.div
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: durations.fast }}
+              className="inline-flex items-center gap-1.5"
+            >
+              {iconLeft && <span className="shrink-0">{iconLeft}</span>}
+              <span>{children}</span>
+              {iconRight && <span className="shrink-0">{iconRight}</span>}
+            </m.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </m.button>
   );
 }

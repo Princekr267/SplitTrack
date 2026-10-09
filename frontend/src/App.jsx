@@ -1,6 +1,8 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
+import { m, AnimatePresence } from 'motion/react';
+import { durations, easings } from './motion/tokens.js';
 
 import LandingPage from './pages/LandingPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
@@ -33,55 +35,76 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  const location = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [location.pathname]);
+
   return (
     <>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+      <AnimatePresence mode="wait">
+        <m.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{
+            duration: durations.base,
+            ease: easings.premium,
+          }}
+          className="w-full min-h-screen flex flex-col"
+        >
+          <Routes location={location}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-        {/* Level 1: Public Read-Only Share Link */}
-        <Route path="/s/:token" element={<PublicStatementPage />} />
+            {/* Level 1: Public Read-Only Share Link */}
+            <Route path="/s/:token" element={<PublicStatementPage />} />
 
-        {/* Level 2: Single-Use Claim Invite Link */}
-        <Route path="/invite/:code" element={<InviteAcceptPage />} />
+            {/* Level 2: Single-Use Claim Invite Link */}
+            <Route path="/invite/:code" element={<InviteAcceptPage />} />
 
-        {/* Protected Host & Friend Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <HostDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/friend"
-          element={
-            <ProtectedRoute>
-              <FriendDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/groups/:groupId"
-          element={
-            <ProtectedRoute>
-              <GroupDetailPage />
-            </ProtectedRoute>
-          }
-        />
+            {/* Protected Host & Friend Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <HostDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/friend"
+              element={
+                <ProtectedRoute>
+                  <FriendDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/groups/:groupId"
+              element={
+                <ProtectedRoute>
+                  <GroupDetailPage />
+                </ProtectedRoute>
+              }
+            />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </m.div>
+      </AnimatePresence>
 
       {/* Built-in Floating Safe Calculator (available on every page) */}
       <Calculator />
