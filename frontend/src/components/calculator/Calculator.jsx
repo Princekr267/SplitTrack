@@ -9,6 +9,8 @@ import {
   Delete,
   Info,
 } from 'lucide-react';
+import { m, AnimatePresence } from 'motion/react';
+import { springs, durations, easings } from '../../motion/tokens.js';
 import { safeEvaluate, calculateSplitBreakdown } from '../../utils/mathParser.js';
 import { useToast } from '../../context/ToastContext.jsx';
 
@@ -285,9 +287,12 @@ export default function Calculator() {
   const portalContent = (
     <div className="splittrack-calculator-root">
       {/* Floating Action Button (FAB) - Clear of mobile bottom nav and FAB */}
-      <button
+      <m.button
         ref={toggleBtnRef}
         type="button"
+        whileTap={{ scale: 0.92 }}
+        whileHover={{ scale: 1.05 }}
+        transition={springs.snappy}
         data-calculator-trigger="true"
         onClick={() => setIsOpen((prev) => !prev)}
         title={isOpen ? "Close Calculator" : "Open Calculator"}
@@ -295,22 +300,38 @@ export default function Calculator() {
         aria-expanded={isOpen}
         className={`fixed bottom-6 left-4 sm:left-6 z-[9999] w-12 h-12 sm:w-14 sm:h-14 rounded-2xl shadow-2xl transition-all duration-200 flex items-center justify-center border focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
           isOpen
-            ? 'bg-slate-800 text-white border-slate-700 rotate-90 scale-105 shadow-slate-900/40'
-            : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-emerald-500/25 hover:scale-105 active:scale-95'
+            ? 'bg-slate-800 text-white border-slate-700 rotate-90 shadow-slate-900/40'
+            : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-emerald-500/25'
         }`}
       >
         <CalcIcon className="w-6 h-6 stroke-[2.2]" />
-      </button>
+      </m.button>
 
       {/* Floating Calculator Panel */}
-      {isOpen && (
-        <div
-          ref={panelRef}
-          role="dialog"
-          aria-label="Financial Calculator"
-          aria-modal="true"
-          className="fixed inset-x-0 bottom-0 sm:inset-auto sm:bottom-24 sm:left-6 z-[9999] w-full sm:w-[360px] bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col max-h-[88vh] sm:max-h-[640px] text-slate-900 dark:text-slate-100 transition-colors"
-        >
+      <AnimatePresence>
+        {isOpen && (
+          <m.div
+            key="calculator-floating-panel"
+            ref={panelRef}
+            role="dialog"
+            aria-label="Financial Calculator"
+            aria-modal="true"
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{
+              opacity: 0,
+              scale: 0.94,
+              y: 12,
+              transition: { duration: durations.fast, ease: easings.easeIn },
+            }}
+            transition={{
+              type: 'spring',
+              damping: 26,
+              stiffness: 340,
+              mass: 0.9,
+            }}
+            className="fixed inset-x-0 bottom-0 sm:inset-auto sm:bottom-24 sm:left-6 z-[9999] w-full sm:w-[360px] bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col max-h-[88vh] sm:max-h-[640px] text-slate-900 dark:text-slate-100 transition-colors ring-1 ring-border/50"
+          >
           {/* Top Header & Tabs */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 shrink-0">
             {/* Mode switch */}
@@ -748,8 +769,9 @@ export default function Calculator() {
               )}
             </div>
           )}
-        </div>
+        </m.div>
       )}
+    </AnimatePresence>
     </div>
   );
 

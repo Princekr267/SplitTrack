@@ -1,28 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Split, LogOut, PlusCircle, Shield, Calculator as CalcIcon } from 'lucide-react';
 import ThemeToggle from './ThemeToggle.jsx';
-import { m, useScroll, useMotionValueEvent } from 'motion/react';
+import { m } from 'motion/react';
 import { springs } from '../../motion/tokens.js';
 
 export default function Navbar({ onOpenNewGroup }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isScrolled, setIsScrolled] = useState(false);
-  const { scrollY } = useScroll();
-
-  useMotionValueEvent(scrollY, 'change', (latest) => {
-    const shouldBeScrolled = latest > 20;
-    if (shouldBeScrolled !== isScrolled) {
-      setIsScrolled(shouldBeScrolled);
-    }
-  });
-
-  // Handle initial scroll state on mount
-  useEffect(() => {
-    setIsScrolled(window.scrollY > 20);
-  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -30,18 +16,8 @@ export default function Navbar({ onOpenNewGroup }) {
   };
 
   return (
-    <header
-      className={`sticky top-0 z-40 w-full transition-all duration-300 ease-out ${
-        isScrolled ? 'pt-2 px-3 sm:px-6' : 'pt-0 px-0'
-      }`}
-    >
-      <div
-        className={`mx-auto flex items-center justify-between transition-all duration-300 ease-out ${
-          isScrolled
-            ? 'max-w-5xl h-13 px-4 sm:px-5 rounded-2xl bg-surface/90 backdrop-blur-xl border border-border shadow-lg shadow-slate-950/5 dark:shadow-slate-950/40'
-            : 'max-w-6xl h-16 px-4 sm:px-6 rounded-none bg-surface/85 backdrop-blur-md border-b border-border'
-        }`}
-      >
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-surface/85 backdrop-blur-md transition-colors">
+      <div className="mx-auto flex items-center justify-between max-w-6xl h-16 px-4 sm:px-6">
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <m.div
