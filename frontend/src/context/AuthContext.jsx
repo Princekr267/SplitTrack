@@ -16,6 +16,9 @@ export function AuthProvider({ children }) {
           setUser(res.data.user);
         }
       } catch (err) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('splittrack_token');
+        }
         setUser(null);
       } finally {
         setLoading(false);
@@ -27,6 +30,9 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
     if (res.success && res.data?.user) {
+      if (res.data?.token && typeof window !== 'undefined') {
+        localStorage.setItem('splittrack_token', res.data.token);
+      }
       setUser(res.data.user);
     }
     return res.data?.user;
@@ -35,6 +41,9 @@ export function AuthProvider({ children }) {
   const register = async (name, email, password) => {
     const res = await api.post('/auth/register', { name, email, password });
     if (res.success && res.data?.user) {
+      if (res.data?.token && typeof window !== 'undefined') {
+        localStorage.setItem('splittrack_token', res.data.token);
+      }
       setUser(res.data.user);
     }
     return res.data?.user;
@@ -44,6 +53,9 @@ export function AuthProvider({ children }) {
     try {
       await api.post('/auth/logout');
     } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('splittrack_token');
+      }
       setUser(null);
     }
   };

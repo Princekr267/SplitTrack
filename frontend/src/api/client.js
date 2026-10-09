@@ -12,6 +12,15 @@ export const api = axios.create({
   },
 });
 
+// Automatically attach Bearer token for cross-domain environments (e.g. Vercel)
+api.interceptors.request.use((config) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('splittrack_token') : null;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
