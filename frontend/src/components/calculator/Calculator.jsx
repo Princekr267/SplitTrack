@@ -498,7 +498,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={handleClear}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-xs bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-xs bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 active:scale-95 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 cursor-pointer"
                     >
                       C
                     </button>
@@ -506,7 +506,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('(')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-semibold text-sm bg-slate-100 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-semibold text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white active:scale-95 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                     >
                       (
                     </button>
@@ -514,7 +514,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend(')')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-semibold text-sm bg-slate-100 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-semibold text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white active:scale-95 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                     >
                       )
                     </button>
@@ -522,7 +522,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('÷')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-brand-400 border border-slate-200 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                     >
                       ÷
                     </button>
@@ -532,7 +532,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('7')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       7
                     </button>
@@ -540,7 +540,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('8')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       8
                     </button>
@@ -548,7 +548,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('9')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       9
                     </button>
@@ -556,7 +556,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('×')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-brand-400 border border-slate-200 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                     >
                       ×
                     </button>
@@ -566,7 +566,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('4')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       4
                     </button>
@@ -574,7 +574,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('5')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       5
                     </button>
@@ -582,7 +582,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('6')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       6
                     </button>
@@ -590,7 +590,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('−')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-brand-400 border border-slate-200 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                     >
                       −
                     </button>
@@ -600,7 +600,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('1')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       1
                     </button>
@@ -608,7 +608,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('2')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       2
                     </button>
@@ -616,7 +616,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('3')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       3
                     </button>
@@ -624,7 +624,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('+')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-brand-400 border border-slate-200 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                     >
                       +
                     </button>
@@ -634,7 +634,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('0')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       0
                     </button>
@@ -642,7 +642,7 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('.')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/60 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 text-slate-900 dark:text-white transition border border-slate-200 dark:border-slate-800/80 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 font-mono tabular-nums cursor-pointer"
                     >
                       .
                     </button>
@@ -650,7 +650,8 @@ export default function Calculator() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAppend('%')}
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-sm bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      aria-label="Percentage"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-base bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-brand-400 border border-slate-200 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                     >
                       %
                     </button>
@@ -659,7 +660,7 @@ export default function Calculator() {
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={handleBackspace}
                       aria-label="Backspace"
-                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-xs bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className="min-h-[44px] min-w-[44px] rounded-xl font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-rose-500 dark:hover:text-rose-400 active:scale-95 transition flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                     >
                       <Delete className="w-4 h-4" />
                     </button>
