@@ -29,3 +29,22 @@ export const personParamsSchema = {
     personId: z.string().uuid('Invalid person ID format'),
   }),
 };
+
+export const personPermissionsSchema = {
+  params: z.object({
+    groupId: z.string().uuid('Invalid group ID format'),
+    personId: z.string().uuid('Invalid person ID format'),
+  }),
+  body: z.object({
+    canViewAllBills: z.boolean(),
+  }),
+};
+
+export const bulkViewAllSchema = {
+  params: z.object({
+    groupId: z.string().uuid('Invalid group ID format'),
+  }),
+  body: z.object({
+    enabled: z.boolean(),
+  }),
+};

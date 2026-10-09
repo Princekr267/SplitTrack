@@ -24,6 +24,8 @@ import {
   Send,
   Edit2,
   ExternalLink,
+  Info,
+  Eye,
 } from 'lucide-react';
 
 export default function FriendDashboardPage() {
@@ -43,7 +45,7 @@ export default function FriendDashboardPage() {
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [activeProfileForPayment, setActiveProfileForPayment] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentMode, setPaymentMode] = useState('upi');
+  const [paymentMode, setPaymentMode] = useState('online');
   const [paymentRef, setPaymentRef] = useState('');
   const [paymentDesc, setPaymentDesc] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -54,10 +56,36 @@ export default function FriendDashboardPage() {
   const [resubmitPayment, setResubmitPayment] = useState(null);
   const [resubmitProfile, setResubmitProfile] = useState(null);
   const [resubmitAmount, setResubmitAmount] = useState('');
-  const [resubmitMode, setResubmitMode] = useState('upi');
+  const [resubmitMode, setResubmitMode] = useState('online');
   const [resubmitRef, setResubmitRef] = useState('');
   const [resubmitDesc, setResubmitDesc] = useState('');
   const [resubmitting, setResubmitting] = useState(false);
+
+  // Full group bills state
+  const [groupBillsModalOpen, setGroupBillsModalOpen] = useState(false);
+  const [groupBillsData, setGroupBillsData] = useState(null);
+  const [loadingGroupBills, setLoadingGroupBills] = useState(false);
+  const [activeGroupBillsProfile, setActiveGroupBillsProfile] = useState(null);
+
+  const handleViewGroupBills = async (profile) => {
+    setActiveGroupBillsProfile(profile);
+    setGroupBillsModalOpen(true);
+    setLoadingGroupBills(true);
+    setGroupBillsData(null);
+
+    try {
+      const res = await api.get(`/friend/profiles/${profile.person.id}/group-bills`);
+      if (res.success) {
+        setGroupBillsData(res.data);
+      } else {
+        throw new Error(res.error?.message || 'Failed to load group bills');
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to load group bills', 'error');
+    } finally {
+      setLoadingGroupBills(false);
+    }
+  };
 
   const fetchProfiles = useCallback(async (isRefresh = false) => {
     try {
@@ -114,7 +142,7 @@ export default function FriendDashboardPage() {
       ? (profile.summary.remainingToPay / 100).toFixed(2)
       : '';
     setPaymentAmount(remainingRupees);
-    setPaymentMode('upi');
+    setPaymentMode('online');
     setPaymentRef('');
     setPaymentDesc('');
     setPaymentDate(new Date().toISOString().split('T')[0]);
@@ -170,7 +198,7 @@ export default function FriendDashboardPage() {
     setResubmitPayment(payment);
     setResubmitProfile(profile);
     setResubmitAmount((payment.amount / 100).toFixed(2));
-    setResubmitMode(payment.mode || 'upi');
+    setResubmitMode(payment.mode || 'online');
     setResubmitRef(payment.reference || '');
     setResubmitDesc(payment.description || '');
     setResubmitModalOpen(true);
@@ -415,6 +443,31 @@ export default function FriendDashboardPage() {
                       </div>
                     </div>
 
+                    {/* Bill Visibility Privacy Banner */}
+                    {!item.person.canViewAllBills ? (
+                      <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center gap-2.5 text-xs text-slate-400">
+                        <Info className="w-4 h-4 text-slate-500 shrink-0" />
+                        <span className="leading-relaxed">
+                          You are viewing your own bills. The host has not enabled full group visibility for you.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                        <div className="flex items-center gap-2 text-brand-300">
+                          <Eye className="w-4 h-4 text-brand-400 shrink-0" />
+                          <span>Full group bill visibility is enabled by the host.</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleViewGroupBills(item)}
+                          className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-500 text-slate-950 hover:bg-brand-400 transition shadow-sm"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View All Group Bills</span>
+                        </button>
+                      </div>
+                    )}
+
                     {/* Card Actions */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
                       <button
@@ -647,10 +700,8 @@ export default function FriendDashboardPage() {
                   onChange={(e) => setPaymentMode(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
                 >
-                  <option value="upi">UPI (GPay, PhonePe, Paytm)</option>
+                  <option value="online">Online (UPI / Bank Transfer)</option>
                   <option value="cash">Cash</option>
-                  <option value="bank_transfer">Bank Transfer / IMPS</option>
-                  <option value="other">Other</option>
                 </select>
               </div>
 
@@ -760,10 +811,8 @@ export default function FriendDashboardPage() {
                 onChange={(e) => setResubmitMode(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-brand-500"
               >
-                <option value="upi">UPI (GPay, PhonePe, Paytm)</option>
+                <option value="online">Online (UPI / Bank Transfer)</option>
                 <option value="cash">Cash</option>
-                <option value="bank_transfer">Bank Transfer / IMPS</option>
-                <option value="other">Other</option>
               </select>
             </div>
 
@@ -814,6 +863,126 @@ export default function FriendDashboardPage() {
               </button>
             </div>
           </form>
+        )}
+      </Modal>
+
+      {/* Full Group Bills Modal (Host Granted Visibility) */}
+      <Modal
+        isOpen={groupBillsModalOpen}
+        onClose={() => setGroupBillsModalOpen(false)}
+        title={`All Group Bills • ${activeGroupBillsProfile?.group?.name || 'Group'}`}
+        size="lg"
+      >
+        {loadingGroupBills ? (
+          <div className="py-12 flex flex-col justify-center items-center gap-3 text-xs text-slate-400">
+            <div className="w-5 h-5 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+            <span>Loading group bills...</span>
+          </div>
+        ) : !groupBillsData ? (
+          <p className="text-xs text-slate-400 text-center py-8">
+            Failed to load group bills.
+          </p>
+        ) : (
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
+            {/* Group Members List */}
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Group Members ({groupBillsData.members?.length || 0})
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {groupBillsData.members?.map((m) => (
+                  <span
+                    key={m.id}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                      m.isHost
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    {m.name}
+                    {m.isHost && <span className="text-[10px] text-amber-400 font-bold">(Host)</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Expenses Breakdown */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Group Expenses ({groupBillsData.expenses?.length || 0})
+                </span>
+              </div>
+
+              {groupBillsData.expenses?.length === 0 ? (
+                <p className="text-xs text-slate-500 italic py-4 text-center">
+                  No expenses have been recorded for this group yet.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {groupBillsData.expenses?.map((exp) => (
+                    <div
+                      key={exp.id}
+                      className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-bold text-white">{exp.title}</h4>
+                          <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
+                            <span>{formatDate(exp.date)}</span>
+                            <span>•</span>
+                            <span>Paid by <strong className="text-slate-200">{exp.paidByName}</strong></span>
+                            {exp.splitType && (
+                              <>
+                                <span>•</span>
+                                <span className="capitalize">{exp.splitType} Split</span>
+                              </>
+                            )}
+                          </div>
+                          {exp.description && (
+                            <p className="text-xs text-slate-400 pt-1">{exp.description}</p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-base font-black text-brand-400 font-mono">
+                            {formatINR(exp.totalAmount)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Splits breakdown among members */}
+                      <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                          Splits Breakdown
+                        </span>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {exp.splits?.map((s, idx) => (
+                            <div
+                              key={idx}
+                              className={`p-2 rounded-lg text-xs border ${
+                                s.isMine
+                                  ? 'bg-brand-500/10 border-brand-500/30 text-brand-300'
+                                  : 'bg-slate-950/60 border-slate-800 text-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="font-semibold truncate">
+                                  {s.memberName} {s.isMine && '(You)'}
+                                </span>
+                                <span className="font-mono font-bold text-white shrink-0">
+                                  {formatINR(s.shareAmount)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </Modal>
     </div>

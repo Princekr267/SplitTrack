@@ -8,6 +8,7 @@ import {
   handleSettleGroup,
   handleReopenGroup,
 } from '../controllers/groupController.js';
+import { bulkSetViewAllBills } from '../controllers/personController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { requireGroupHost } from '../middleware/roleMiddleware.js';
 import { validate } from '../middleware/validate.js';
@@ -16,6 +17,7 @@ import {
   updateGroupSchema,
   groupIdParamSchema,
 } from '../validations/groupValidation.js';
+import { bulkViewAllSchema } from '../validations/personValidation.js';
 
 const router = Router();
 
@@ -28,5 +30,8 @@ router.patch('/:groupId', requireGroupHost, validate(updateGroupSchema), updateG
 router.delete('/:groupId', requireGroupHost, validate(groupIdParamSchema), deleteGroup);
 router.post('/:groupId/settle', requireGroupHost, validate(groupIdParamSchema), handleSettleGroup);
 router.post('/:groupId/reopen', requireGroupHost, validate(groupIdParamSchema), handleReopenGroup);
+
+// Bulk bill visibility permission (host only)
+router.post('/:groupId/permissions/view-all', requireGroupHost, validate(bulkViewAllSchema), bulkSetViewAllBills);
 
 export default router;

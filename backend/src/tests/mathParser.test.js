@@ -3,47 +3,49 @@ import { safeEvaluate, calculateSplitBreakdown, MathParseError } from '../../../
 
 describe('mathParser: Safe Shunting-Yard Evaluator', () => {
   it('correctly evaluates basic arithmetic with operator precedence', () => {
-    expect(safeEvaluate('2 + 3 * 4')).toBe(14);
-    expect(safeEvaluate('10 - 2 * 3')).toBe(4);
-    expect(safeEvaluate('20 / 4 + 5')).toBe(10);
+    expect(safeEvaluate('2 + 3 * 4').result).toBe(14);
+    expect(safeEvaluate('10 - 2 * 3').result).toBe(4);
+    expect(safeEvaluate('20 / 4 + 5').result).toBe(10);
   });
 
   it('respects parentheses precedence', () => {
-    expect(safeEvaluate('(2 + 3) * 4')).toBe(20);
-    expect(safeEvaluate('100 / (10 + 15)')).toBe(4);
-    expect(safeEvaluate('((2 + 3) * (4 + 2)) / 3')).toBe(10);
+    expect(safeEvaluate('(2 + 3) * 4').result).toBe(20);
+    expect(safeEvaluate('100 / (10 + 15)').result).toBe(4);
+    expect(safeEvaluate('((2 + 3) * (4 + 2)) / 3').result).toBe(10);
   });
 
   it('handles floating point decimals correctly without floating point noise', () => {
-    expect(safeEvaluate('10.5 + 4.25')).toBe(14.75);
-    expect(safeEvaluate('0.1 + 0.2')).toBe(0.3);
-    expect(safeEvaluate('100.50 * 2')).toBe(201);
+    expect(safeEvaluate('10.5 + 4.25').result).toBe(14.75);
+    expect(safeEvaluate('0.1 + 0.2').result).toBe(0.3);
+    expect(safeEvaluate('100.50 * 2').result).toBe(201);
   });
 
   it('handles unicode mathematical symbols (×, ÷, −)', () => {
-    expect(safeEvaluate('10 × 5')).toBe(50);
-    expect(safeEvaluate('100 ÷ 4')).toBe(25);
-    expect(safeEvaluate('50 − 15')).toBe(35);
+    expect(safeEvaluate('10 × 5').result).toBe(50);
+    expect(safeEvaluate('100 ÷ 4').result).toBe(25);
+    expect(safeEvaluate('50 − 15').result).toBe(35);
   });
 
   it('handles unary negative numbers correctly', () => {
-    expect(safeEvaluate('-10 + 25')).toBe(15);
-    expect(safeEvaluate('10 * -5')).toBe(-50);
-    expect(safeEvaluate('(-5 + 15) * 2')).toBe(20);
+    expect(safeEvaluate('-10 + 25').result).toBe(15);
+    expect(safeEvaluate('10 * -5').result).toBe(-50);
+    expect(safeEvaluate('(-5 + 15) * 2').result).toBe(20);
   });
 
-  it('throws MathParseError on division by zero', () => {
-    expect(() => safeEvaluate('100 / 0')).toThrow('Cannot divide by zero');
+  it('handles division by zero with error state', () => {
+    const res = safeEvaluate('100 / 0');
+    expect(res.success).toBe(false);
+    expect(res.error).toMatch(/Cannot divide by zero/i);
   });
 
-  it('throws MathParseError on mismatched parentheses', () => {
-    expect(() => safeEvaluate('(10 + 20')).toThrow(MathParseError);
-    expect(() => safeEvaluate('10 + 20)')).toThrow(MathParseError);
+  it('handles mismatched parentheses with error state', () => {
+    expect(safeEvaluate('(10 + 20').success).toBe(false);
+    expect(safeEvaluate('10 + 20)').success).toBe(false);
   });
 
-  it('throws MathParseError on invalid characters or double dots', () => {
-    expect(() => safeEvaluate('10.5.2 + 2')).toThrow(MathParseError);
-    expect(() => safeEvaluate('10 + alert(1)')).toThrow(MathParseError);
+  it('handles invalid characters or double dots with error state', () => {
+    expect(safeEvaluate('10.5.2 + 2').success).toBe(false);
+    expect(safeEvaluate('10 + alert(1)').success).toBe(false);
   });
 
   it('calculates split breakdown with explicit remainder handling in paise', () => {

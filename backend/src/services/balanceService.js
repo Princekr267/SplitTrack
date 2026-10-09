@@ -30,6 +30,7 @@ export async function calculateGroupBalances(groupId, tx = db) {
       hasShareLink: sql`CASE WHEN ${people.shareTokenHash} IS NOT NULL THEN true ELSE false END`.mapWith(Boolean),
       hasInvite: sql`CASE WHEN ${people.inviteCodeHash} IS NOT NULL THEN true ELSE false END`.mapWith(Boolean),
       inviteExpiresAt: people.inviteExpiresAt,
+      canViewAllBills: people.canViewAllBills,
       isDeleted: people.isDeleted,
     })
     .from(people)

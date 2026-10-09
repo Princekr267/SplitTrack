@@ -8,6 +8,13 @@
       "when": 1791465410909,
       "tag": "0000_condemned_lilandra",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791465410910,
+      "tag": "0001_add_can_view_all_bills",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,8 @@ import {
   generateShareLink,
   revokeShareLink,
   getPersonStatement,
+  updatePersonPermissions,
+  bulkSetViewAllBills,
 } from '../controllers/personController.js';
 import { generateInviteCode } from '../controllers/inviteController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
@@ -16,6 +18,8 @@ import {
   addPersonSchema,
   updatePersonSchema,
   personParamsSchema,
+  personPermissionsSchema,
+  bulkViewAllSchema,
 } from '../validations/personValidation.js';
 import { groupIdParamSchema } from '../validations/groupValidation.js';
 
@@ -37,5 +41,8 @@ router.post('/:personId/invite', requireGroupHost, validate(personParamsSchema),
 
 // Person itemized statement
 router.get('/:personId/statement', validate(personParamsSchema), getPersonStatement);
+
+// Bill visibility permission (host only)
+router.patch('/:personId/permissions', requireGroupHost, validate(personPermissionsSchema), updatePersonPermissions);
 
 export default router;

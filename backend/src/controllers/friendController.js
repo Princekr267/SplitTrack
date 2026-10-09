@@ -1,8 +1,92 @@
-import { eq, and, or, inArray, desc } from 'drizzle-orm';
+import { eq, and, or, inArray, desc, asc } from 'drizzle-orm';
 import { db } from '../config/db.js';
 import { people, groups, expenses, expenseSplits, payments } from '../models/index.js';
 import { recordAuditLog } from '../services/auditService.js';
 import { ensureGroupNotSettled } from '../services/groupService.js';
+
+/**
+ * GET /api/me/profiles/:personId/group-bills
+ * Returns all group expenses with each split member share.
+ * Requires: logged-in user, person.linkedUserId === req.user.id, can_view_all_bills = true.
+ * Never returns: balances, net amounts, payments, phone numbers, hashes, user ids.
+ */
+export async function getGroupBillsForFriend(req, res, next) {
+  try {
+    const { personId } = req.params;
+
+    // Fresh DB load — never trust JWT cache for this permission
+    const [person] = await db
+      .select({
+        id: people.id,
+        groupId: people.groupId,
+        linkedUserId: people.linkedUserId,
+        isHost: people.isHost,
+        isDeleted: people.isDeleted,
+        canViewAllBills: people.canViewAllBills,
+      })
+      .from(people)
+      .where(and(eq(people.id, personId), eq(people.isDeleted, false)));
+
+    if (!person) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Profile not found.' } });
+    }
+
+    // Must be the logged-in user's own profile
+    if (person.linkedUserId !== req.user.id) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not your profile.' } });
+    }
+
+    // Permission check fresh from DB
+    if (!person.canViewAllBills) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'PERMISSION_DENIED', message: 'The host has not granted you access to view all bills.' },
+      });
+    }
+
+    // Fetch all non-deleted expenses for this group with splits
+    const expenseList = await db.query.expenses.findMany({
+      where: and(eq(expenses.groupId, person.groupId), eq(expenses.isDeleted, false)),
+      orderBy: [asc(expenses.date), asc(expenses.createdAt)],
+      columns: { id: true, title: true, date: true, description: true, totalAmount: true, splitType: true, paidByPersonId: true },
+      with: {
+        paidByPerson: { columns: { id: true, name: true } },
+        splits: {
+          columns: { personId: true, amount: true },
+          with: { person: { columns: { id: true, name: true } } },
+        },
+      },
+    });
+
+    // Shape response: never expose balances, payments, phones, hashes, user ids
+    const data = expenseList.map((exp) => ({
+      id: exp.id,
+      title: exp.title,
+      date: exp.date,
+      description: exp.description,
+      totalAmount: exp.totalAmount,
+      splitType: exp.splitType,
+      paidByName: exp.paidByPerson?.name ?? 'Unknown',
+      splits: exp.splits.map((s) => ({
+        memberName: s.person?.name ?? 'Unknown',
+        shareAmount: s.amount,
+        isSelfShare: s.personId === exp.paidByPersonId,
+        isMine: s.personId === personId,
+      })),
+    }));
+
+    // Also return the group member name list (no balances, no phones, no hashes)
+    const members = await db
+      .select({ id: people.id, name: people.name, isHost: people.isHost })
+      .from(people)
+      .where(and(eq(people.groupId, person.groupId), eq(people.isDeleted, false)));
+
+    res.json({ success: true, data: { expenses: data, members } });
+  } catch (error) {
+    next(error);
+  }
+}
+
 
 /**
  * Lists all person profiles linked to the current user account across groups.
@@ -19,6 +103,7 @@ export async function getLinkedProfiles(req, res, next) {
         name: people.name,
         phone: people.phone,
         note: people.note,
+        canViewAllBills: people.canViewAllBills,
         createdAt: people.createdAt,
       })
       .from(people)

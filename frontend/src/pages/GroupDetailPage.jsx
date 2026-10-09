@@ -37,6 +37,7 @@ import {
   MessageCircle,
   UserCheck,
   Link2,
+  Eye,
 } from 'lucide-react';
 
 export default function GroupDetailPage() {
@@ -210,6 +211,39 @@ ${balanceLine}`);
 
     const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://wa.me/?text=${text}`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleToggleBillVisibility = async (person) => {
+    if (!isHost || person.isHost) return;
+    const newStatus = !person.canViewAllBills;
+
+    // Optimistic UI update
+    setPeople((prev) =>
+      prev.map((p) => (p.id === person.id ? { ...p, canViewAllBills: newStatus } : p))
+    );
+
+    try {
+      const res = await api.patch(
+        `/groups/${groupId}/people/${person.id}/permissions`,
+        { canViewAllBills: newStatus }
+      );
+      if (res.success) {
+        addToast(
+          newStatus
+            ? `Granted ${person.name} permission to view all group bills`
+            : `Revoked full bill visibility for ${person.name}`,
+          'success'
+        );
+      } else {
+        throw new Error(res.error?.message || 'Failed to update permission');
+      }
+    } catch (err) {
+      // Rollback on error
+      setPeople((prev) =>
+        prev.map((p) => (p.id === person.id ? { ...p, canViewAllBills: !newStatus } : p))
+      );
+      addToast(err.message || 'Failed to update visibility permission', 'error');
+    }
   };
 
   if (loading) {
@@ -624,6 +658,38 @@ ${balanceLine}`);
                           </span>
                         </div>
                       </div>
+
+                      {/* Visibility Permission Toggle (Host Only for non-host members) */}
+                      {isHost && !person.isHost && (
+                        <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-surface-raised/60 border border-border text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Eye className={`w-3.5 h-3.5 shrink-0 ${person.canViewAllBills ? 'text-brand-500' : 'text-text-muted'}`} />
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-semibold text-text text-[11px] truncate">Can view all group bills</span>
+                              <span className="text-[10px] text-text-muted truncate">
+                                {person.canViewAllBills ? 'Full bill visibility granted' : 'Own bills only (default)'}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={Boolean(person.canViewAllBills)}
+                            aria-label={`Toggle full bill visibility for ${person.name}`}
+                            onClick={() => handleToggleBillVisibility(person)}
+                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500/40 ${
+                              person.canViewAllBills ? 'bg-brand-500' : 'bg-surface-raised border-border'
+                            }`}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                person.canViewAllBills ? 'translate-x-4' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      )}
 
                       {/* Contextual Action Buttons */}
                       <div className="flex items-center justify-between gap-2 pt-2 border-t border-border flex-wrap">

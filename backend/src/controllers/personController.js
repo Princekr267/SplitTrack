@@ -179,6 +179,87 @@ export async function deletePerson(req, res, next) {
 }
 
 /**
+ * Host toggles can_view_all_bills for a single friend.
+ * The host person row cannot have it set.
+ */
+export async function updatePersonPermissions(req, res, next) {
+  try {
+    const { groupId, personId } = req.params;
+    const { canViewAllBills } = req.body;
+
+    const [existing] = await db
+      .select()
+      .from(people)
+      .where(and(eq(people.id, personId), eq(people.groupId, groupId), eq(people.isDeleted, false)));
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'PERSON_NOT_FOUND', message: 'Person not found in this group.' },
+      });
+    }
+
+    if (existing.isHost) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'CANNOT_SET_HOST', message: 'The host person does not need a view permission.' },
+      });
+    }
+
+    const [updated] = await db
+      .update(people)
+      .set({ canViewAllBills })
+      .where(eq(people.id, personId))
+      .returning();
+
+    await recordAuditLog({
+      actor: req.user,
+      action: canViewAllBills ? 'GRANT_VIEW_ALL_BILLS' : 'REVOKE_VIEW_ALL_BILLS',
+      entityType: 'Person',
+      entityId: personId,
+      groupId,
+      before: { canViewAllBills: existing.canViewAllBills },
+      after: { canViewAllBills },
+      ipAddress: req.ip,
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Host grants or revokes can_view_all_bills for ALL friends in the group at once.
+ */
+export async function bulkSetViewAllBills(req, res, next) {
+  try {
+    const { groupId } = req.params;
+    const { enabled } = req.body;
+
+    const updated = await db
+      .update(people)
+      .set({ canViewAllBills: enabled })
+      .where(and(eq(people.groupId, groupId), eq(people.isHost, false), eq(people.isDeleted, false)))
+      .returning({ id: people.id });
+
+    await recordAuditLog({
+      actor: req.user,
+      action: enabled ? 'BULK_GRANT_VIEW_ALL_BILLS' : 'BULK_REVOKE_VIEW_ALL_BILLS',
+      entityType: 'Group',
+      entityId: groupId,
+      groupId,
+      after: { enabled, affectedCount: updated.length },
+      ipAddress: req.ip,
+    });
+
+    res.json({ success: true, data: { affectedCount: updated.length, enabled } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * Level 1: Generate or regenerate a private read-only view link for a person (/s/:token).
  * Token is 32 random bytes; only the SHA-256 hash is stored in the database.
  */
