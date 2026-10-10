@@ -45,6 +45,16 @@ export default {
           foreground: 'var(--info-foreground)',
         },
         ring: 'var(--ring)',
+        chart: {
+          owes: 'var(--chart-owes)',
+          owed: 'var(--chart-owed)',
+          pending: 'var(--chart-pending)',
+          primary: 'var(--chart-primary)',
+          secondary: 'var(--chart-secondary)',
+          track: 'var(--chart-track)',
+          grid: 'var(--chart-grid)',
+          axis: 'var(--chart-axis)',
+        },
         brand: {
           50: '#ecfdf5',
           100: '#d1fae5',

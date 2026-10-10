@@ -21,6 +21,16 @@
     --info: #2563eb;
     --info-foreground: #ffffff;
     --ring: #10b981;
+
+    /* Chart design tokens (light) */
+    --chart-owes: #dc2626;
+    --chart-owed: #059669;
+    --chart-pending: #d97706;
+    --chart-primary: #059669;
+    --chart-secondary: #4f46e5;
+    --chart-track: #e2e8f0;
+    --chart-grid: #f1f5f9;
+    --chart-axis: #64748b;
   }
 
   .dark {
@@ -41,6 +51,16 @@
     --info: #3b82f6;
     --info-foreground: #ffffff;
     --ring: #10b981;
+
+    /* Chart design tokens (dark) */
+    --chart-owes: #ef4444;
+    --chart-owed: #10b981;
+    --chart-pending: #f59e0b;
+    --chart-primary: #10b981;
+    --chart-secondary: #818cf8;
+    --chart-track: #334155;
+    --chart-grid: #1e293b;
+    --chart-axis: #94a3b8;
   }
 
   body {

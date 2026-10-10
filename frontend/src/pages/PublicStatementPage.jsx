@@ -17,14 +17,35 @@ import Button from '../components/common/Button.jsx';
 import { Card } from '../components/common/Card.jsx';
 import EmptyState from '../components/common/EmptyState.jsx';
 import ThemeToggle from '../components/common/ThemeToggle.jsx';
-import { formatINR } from '../utils/currency.js';
-import { formatDate } from '../utils/date.js';
+import AnimatedAmount from '../components/common/AnimatedAmount.jsx';
+import FriendStatementSkeleton from '../components/charts/FriendStatementSkeleton.jsx';
+
+const FriendStatementCharts = React.lazy(() => import('../components/charts/FriendStatementCharts.jsx'));
 
 export default function PublicStatementPage() {
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(null);
+
+  const fetchAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      const res = await api.get(`/s/${token}/analytics`);
+      if (res.success) {
+        setAnalytics(res.data);
+      }
+    } catch (err) {
+      setAnalyticsError(err.message || 'Failed to load visual analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchStatement() {
@@ -33,6 +54,8 @@ export default function PublicStatementPage() {
         const res = await api.get(`/s/${token}`);
         if (res.success) {
           setData(res.data);
+          // Lazy-load analytics after statement data
+          fetchAnalytics();
         }
       } catch (err) {
         setError(err.message || 'This shared statement link is invalid or has expired.');
@@ -113,7 +136,7 @@ export default function PublicStatementPage() {
               Total Share
             </span>
             <span className="text-xl font-black text-text mt-1 block font-mono tabular-nums">
-              {formatINR(totals.totalShare)}
+              <AnimatedAmount amount={totals.totalShare} />
             </span>
             <span className="text-[11px] text-text-muted mt-0.5 block">Your divided costs</span>
           </Card>
@@ -123,16 +146,18 @@ export default function PublicStatementPage() {
               Total Repaid
             </span>
             <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block font-mono tabular-nums">
-              {formatINR(totals.totalPaid)}
+              <AnimatedAmount amount={totals.totalPaid} />
             </span>
             <span className="text-[11px] text-text-muted mt-0.5 block">Accepted repayments</span>
           </Card>
+        </div>
 
-          {/* Main Due Balance */}
-          <div className="col-span-2 bg-surface-raised p-4 sm:p-5 rounded-2xl border border-border flex items-center justify-between shadow-sm">
+        {/* Sticky Remaining to Pay Card */}
+        <div className="sticky top-14 z-20 pt-1 pb-1">
+          <div className="bg-surface/95 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-border flex items-center justify-between shadow-md transition-shadow">
             <div>
               <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
-                Outstanding Balance
+                Remaining to Pay
               </span>
               <span className="text-xs text-text-muted block mt-0.5 font-medium">
                 {owes ? 'Amount to return to host' : isOwed ? 'Host owes you' : 'All debts settled'}
@@ -143,7 +168,7 @@ export default function PublicStatementPage() {
               {owes ? (
                 <div className="inline-flex flex-col items-end">
                   <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 font-mono tabular-nums">
-                    {formatINR(totals.remainingToPay)}
+                    <AnimatedAmount amount={totals.remainingToPay} />
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
                     Owes Host
@@ -152,7 +177,7 @@ export default function PublicStatementPage() {
               ) : isOwed ? (
                 <div className="inline-flex flex-col items-end">
                   <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                    {formatINR(totals.groupOwesYou)}
+                    <AnimatedAmount amount={totals.groupOwesYou} />
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                     Group Owes You
@@ -166,6 +191,16 @@ export default function PublicStatementPage() {
             </div>
           </div>
         </div>
+
+        {/* Lazy-Loaded Friend Visualizations (Your dues over time + Repayment ring) */}
+        <React.Suspense fallback={<FriendStatementSkeleton />}>
+          <FriendStatementCharts
+            analytics={analytics}
+            loading={analyticsLoading}
+            error={analyticsError}
+            onRetry={fetchAnalytics}
+          />
+        </React.Suspense>
 
         {/* Call To Action Banner: Sign up / Claim profile */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-surface-raised to-surface border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">

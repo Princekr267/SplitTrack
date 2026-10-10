@@ -25,6 +25,7 @@ import {
   ArrowLeft,
   Plus,
   CreditCard,
+  BarChart3,
   Lock,
   Unlock,
   CheckCircle2,
@@ -45,6 +46,11 @@ import { m } from 'motion/react';
 import { springs } from '../motion/tokens.js';
 import { Stagger } from '../motion/components.jsx';
 import { listItem } from '../motion/variants.js';
+import AnimatedAmount from '../components/common/AnimatedAmount.jsx';
+import GroupChartsSkeleton from '../components/charts/GroupChartsSkeleton.jsx';
+import Sparkline from '../components/charts/Sparkline.jsx';
+
+const GroupChartsSection = React.lazy(() => import('../components/charts/GroupChartsSection.jsx'));
 
 export default function GroupDetailPage() {
   const { groupId } = useParams();
@@ -58,6 +64,11 @@ export default function GroupDetailPage() {
   const [payments, setPayments] = useState([]);
   const [isHost, setIsHost] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Analytics for interactive charts
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(null);
 
   // Tabs: 'people' | 'expenses' | 'payments'
   const [activeTab, setActiveTab] = useState('people');
@@ -85,6 +96,21 @@ export default function GroupDetailPage() {
   // Quick pre-selected member for modals
   const [selectedPersonForAction, setSelectedPersonForAction] = useState(null);
 
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      const res = await api.get(`/groups/${groupId}/analytics`);
+      if (res.success) {
+        setAnalytics(res.data);
+      }
+    } catch (err) {
+      setAnalyticsError(err.message || 'Failed to load chart analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [groupId]);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -99,6 +125,9 @@ export default function GroupDetailPage() {
         setPeople(groupRes.data.people || []);
         setSummary(groupRes.data.summary || null);
         setIsHost(groupRes.data.isHost);
+        if (groupRes.data.isHost || user?.role === 'admin') {
+          fetchAnalytics();
+        }
       }
       if (expRes.success) {
         setExpenses(expRes.data || []);
@@ -111,11 +140,22 @@ export default function GroupDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [groupId, addToast]);
+  }, [groupId, addToast, user, fetchAnalytics]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Background refetch on window focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isHost || user?.role === 'admin') {
+        fetchAnalytics();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [isHost, user, fetchAnalytics]);
 
   const handleConfirmSettle = async () => {
     if (!summary?.isSettledReady) {
@@ -316,6 +356,7 @@ ${balanceLine}`);
 
   const tabList = [
     { id: 'people', label: 'People', icon: Users, count: visiblePeople.length },
+    ...(isHost ? [{ id: 'charts', label: 'Charts', icon: BarChart3, className: 'sm:hidden' }] : []),
     { id: 'expenses', label: 'Expenses', icon: Receipt, count: expenses.length },
     {
       id: 'payments',
@@ -496,7 +537,7 @@ ${balanceLine}`);
                   Total Spent
                 </span>
                 <span className="text-xl sm:text-2xl font-black text-text mt-1 block font-mono tabular-nums">
-                  {formatINR(summary.totalSpent)}
+                  <AnimatedAmount amount={summary.totalSpent} />
                 </span>
                 <span className="text-[11px] text-text-muted block">
                   Across {expenses.length} recorded expenses
@@ -510,7 +551,7 @@ ${balanceLine}`);
                   Total Repaid
                 </span>
                 <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block font-mono tabular-nums">
-                  {formatINR(summary.totalReceived)}
+                  <AnimatedAmount amount={summary.totalReceived} />
                 </span>
                 <span className="text-[11px] text-text-muted block">
                   Settled to host ledger
@@ -524,7 +565,7 @@ ${balanceLine}`);
                   Pending Approvals
                 </span>
                 <span className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 mt-1 block font-mono tabular-nums">
-                  {formatINR(summary.totalPending)}
+                  <AnimatedAmount amount={summary.totalPending} />
                 </span>
                 <span className="text-[11px] text-text-muted block">
                   Awaiting host review
@@ -548,9 +589,7 @@ ${balanceLine}`);
                           : 'text-text-muted'
                       }`}
                     >
-                      {hostPerson.net > 0
-                        ? `+${formatINR(hostPerson.net)}`
-                        : formatINR(hostPerson.net)}
+                      <AnimatedAmount amount={hostPerson.net} showSign={true} />
                     </span>
                     <span className="text-[11px] text-text-muted block truncate">
                       {hostPerson.net > 0
@@ -612,12 +651,47 @@ ${balanceLine}`);
           </div>
         )}
 
+        {/* Desktop Charts Section (Below summary stats, host view) */}
+        {isHost && (
+          <div className="hidden sm:block space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+                Group Visualizations
+              </h2>
+            </div>
+            <React.Suspense fallback={<GroupChartsSkeleton />}>
+              <GroupChartsSection
+                analytics={analytics}
+                loading={analyticsLoading}
+                error={analyticsError}
+                onRetry={fetchAnalytics}
+                isSettled={group?.status === 'settled'}
+              />
+            </React.Suspense>
+          </div>
+        )}
+
         {/* Tab Navigation */}
         <Tabs
           tabs={tabList}
           activeTab={activeTab}
           onChange={(newTab) => setActiveTab(newTab)}
         />
+
+        {/* TAB 0: Charts (Mobile Only) */}
+        {activeTab === 'charts' && isHost && (
+          <div className="sm:hidden space-y-4 animate-fade-in">
+            <React.Suspense fallback={<GroupChartsSkeleton />}>
+              <GroupChartsSection
+                analytics={analytics}
+                loading={analyticsLoading}
+                error={analyticsError}
+                onRetry={fetchAnalytics}
+                isSettled={group?.status === 'settled'}
+              />
+            </React.Suspense>
+          </div>
+        )}
 
         {/* TAB 1: People & Balances */}
         {activeTab === 'people' && (
@@ -692,29 +766,42 @@ ${balanceLine}`);
 
                         {/* Balance display */}
                         <div className="text-right shrink-0">
-                          {owesMoney ? (
-                            <div className="inline-flex flex-col items-end">
-                              <span className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400 tracking-wider">
-                                Owes Host
-                              </span>
-                              <span className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400 font-mono tabular-nums">
-                                {formatINR(person.remainingToPay)}
-                              </span>
-                            </div>
-                          ) : isOwed ? (
-                            <div className="inline-flex flex-col items-end">
-                              <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">
-                                Group Owes
-                              </span>
-                              <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                                {formatINR(person.groupOwesYou)}
-                              </span>
-                            </div>
-                          ) : (
-                            <Badge variant="settled" size="xs" showIcon>
-                              Settled ₹0.00
-                            </Badge>
-                          )}
+                          {(() => {
+                            const personSparkline = analytics?.balances?.find((b) => b.personId === person.id)?.sparkline;
+                            return owesMoney ? (
+                              <div className="inline-flex flex-col items-end">
+                                <span className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400 tracking-wider">
+                                  Owes Host
+                                </span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {personSparkline && personSparkline.length > 1 && (
+                                    <Sparkline data={personSparkline} width={52} height={18} />
+                                  )}
+                                  <span className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+                                    {formatINR(person.remainingToPay)}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : isOwed ? (
+                              <div className="inline-flex flex-col items-end">
+                                <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">
+                                  Group Owes
+                                </span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {personSparkline && personSparkline.length > 1 && (
+                                    <Sparkline data={personSparkline} width={52} height={18} />
+                                  )}
+                                  <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+                                    {formatINR(person.groupOwesYou)}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <Badge variant="settled" size="xs" showIcon>
+                                Settled ₹0.00
+                              </Badge>
+                            );
+                          })()}
                         </div>
                       </div>
 

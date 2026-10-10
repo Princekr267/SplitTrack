@@ -33,14 +33,19 @@ import {
 } from '../controllers/adminController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { requireAdmin } from '../middleware/roleMiddleware.js';
+import { validate } from '../middleware/validate.js';
+import { adminAnalyticsQuerySchema } from '../validations/analyticsValidation.js';
+import { getAdminAnalytics } from '../controllers/analyticsController.js';
 
 const router = Router();
 
 // Guard all admin routes: authenticate -> requireAdmin (re-reads role & isActive from DB)
 router.use(authenticate, requireAdmin);
 
-// Overview / stats
+// Overview / stats & analytics
 router.get('/stats', getSystemStats);
+router.get('/analytics', validate(adminAnalyticsQuerySchema), getAdminAnalytics);
+
 
 // Users management
 router.get('/users', getUsers);

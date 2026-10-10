@@ -20,6 +20,10 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import PasswordChangedBanner from './components/common/PasswordChangedBanner.jsx';
 import Calculator from './components/calculator/Calculator.jsx';
 
+const DevChartsPage = import.meta.env.DEV
+  ? React.lazy(() => import('./pages/DevChartsPage.jsx'))
+  : null;
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
@@ -116,6 +120,17 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
+            {import.meta.env.DEV && DevChartsPage && (
+              <Route
+                path="/dev/charts"
+                element={
+                  <React.Suspense fallback={<div className="p-8 text-center text-text-muted">Loading Visual QA...</div>}>
+                    <DevChartsPage />
+                  </React.Suspense>
+                }
+              />
+            )}
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

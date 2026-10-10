@@ -31,6 +31,10 @@ import { m, AnimatePresence } from 'motion/react';
 import { springs, durations, easings } from '../motion/tokens.js';
 import { Stagger } from '../motion/components.jsx';
 import { listItem } from '../motion/variants.js';
+import AnimatedAmount from '../components/common/AnimatedAmount.jsx';
+import FriendStatementSkeleton from '../components/charts/FriendStatementSkeleton.jsx';
+
+const FriendStatementCharts = React.lazy(() => import('../components/charts/FriendStatementCharts.jsx'));
 
 export default function FriendDashboardPage() {
   const { user } = useAuth();
@@ -44,6 +48,10 @@ export default function FriendDashboardPage() {
   const [expandedProfileId, setExpandedProfileId] = useState(null);
   const [profileStatements, setProfileStatements] = useState({});
   const [loadingStatementId, setLoadingStatementId] = useState(null);
+
+  // Analytics per profile
+  const [profileAnalytics, setProfileAnalytics] = useState({});
+  const [loadingAnalyticsId, setLoadingAnalyticsId] = useState(null);
 
   // Submit payment modal state
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
@@ -122,6 +130,27 @@ export default function FriendDashboardPage() {
     }
 
     setExpandedProfileId(personId);
+
+    // Fetch visual analytics if not loaded yet
+    if (!profileAnalytics[personId]) {
+      (async () => {
+        try {
+          setLoadingAnalyticsId(personId);
+          const aRes = await api.get(`/me/profiles/${personId}/analytics`);
+          if (aRes.success) {
+            setProfileAnalytics((prev) => ({
+              ...prev,
+              [personId]: aRes.data,
+            }));
+          }
+        } catch {
+          // graceful fallback
+        } finally {
+          setLoadingAnalyticsId(null);
+        }
+      })();
+    }
+
     if (profileStatements[personId]) return;
 
     try {
@@ -562,6 +591,43 @@ export default function FriendDashboardPage() {
                             </p>
                           ) : (
                             <>
+                              {/* Sticky Remaining to Pay Card */}
+                              <div className="sticky top-16 z-20 pt-1 pb-2">
+                                <div className="bg-surface/95 backdrop-blur-md p-4 rounded-xl border border-border flex items-center justify-between shadow-md">
+                                  <div>
+                                    <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
+                                      Remaining to Pay
+                                    </span>
+                                    <span className="text-xs text-text-muted block mt-0.5 font-medium">
+                                      {owesMoney ? 'Amount to return to host' : summary.groupOwesYou > 0 ? 'Host owes you' : 'All debts settled'}
+                                    </span>
+                                  </div>
+                                  <div className="text-right">
+                                    {owesMoney ? (
+                                      <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+                                        <AnimatedAmount amount={summary.remainingToPay} />
+                                      </span>
+                                    ) : summary.groupOwesYou > 0 ? (
+                                      <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+                                        <AnimatedAmount amount={summary.groupOwesYou} />
+                                      </span>
+                                    ) : (
+                                      <Badge variant="settled" size="sm" showIcon>
+                                        Settled ₹0.00
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Friend Statement Visualizations */}
+                              <React.Suspense fallback={<FriendStatementSkeleton />}>
+                                <FriendStatementCharts
+                                  analytics={profileAnalytics[person.id]}
+                                  loading={loadingAnalyticsId === person.id}
+                                />
+                              </React.Suspense>
+
                               {/* Payments Section */}
                               <div className="space-y-3">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-text flex items-center gap-1.5">

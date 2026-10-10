@@ -8,6 +8,9 @@ import {
   dismissNotice,
 } from '../controllers/meController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
+import { validate } from '../middleware/validate.js';
+import { analyticsQuerySchema } from '../validations/analyticsValidation.js';
+import { getFriendAnalytics } from '../controllers/analyticsController.js';
 
 const router = Router();
 
@@ -22,4 +25,8 @@ router.get('/export', exportUserData);
 router.post('/dismiss-password-notice', dismissNotice);
 router.post('/password-notice/dismiss', dismissNotice);
 
+// Friend statement analytics (own data only)
+router.get('/profiles/:personId/analytics', validate(analyticsQuerySchema), getFriendAnalytics);
+
 export default router;
+

@@ -35,7 +35,7 @@ export default function Tabs({
             transition={springs.snappy}
             onClick={() => onChange(tab.id)}
             className={`
-              relative pb-3 pt-1 text-xs sm:text-sm font-bold flex items-center gap-2 shrink-0 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-lg transition-colors
+              relative pb-3 pt-1 text-xs sm:text-sm font-bold flex items-center gap-2 shrink-0 cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-lg transition-colors ${tab.className || ''}
               ${
                 isActive
                   ? 'text-text'
