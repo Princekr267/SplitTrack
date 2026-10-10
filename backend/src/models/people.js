@@ -30,6 +30,7 @@ export const people = pgTable(
     inviteCodeHash: varchar('invite_code_hash', { length: 255 }),
     inviteExpiresAt: timestamp('invite_expires_at', { withTimezone: true }),
     canViewAllBills: boolean('can_view_all_bills').default(false).notNull(),
+    lastViewedAt: timestamp('last_viewed_at', { withTimezone: true }),
     isDeleted: boolean('is_deleted').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true })

@@ -1,6 +1,6 @@
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { db } from '../config/db.js';
-import { people, expenses, expenseSplits, payments } from '../models/index.js';
+import { groups, people, expenses, expenseSplits, payments, users } from '../models/index.js';
 
 /**
  * Computes group balances and per-person ledger stats.
@@ -19,13 +19,16 @@ import { people, expenses, expenseSplits, payments } from '../models/index.js';
  * @param {object} [tx=db] - Optional Drizzle transaction handle
  */
 export async function calculateGroupBalances(groupId, tx = db) {
-  // 1. Fetch all non-deleted members in the group
+  // 1. Fetch all non-deleted members in the group with linked user info
   const groupPeople = await tx
     .select({
       id: people.id,
       name: people.name,
       isHost: people.isHost,
       linkedUserId: people.linkedUserId,
+      accountName: users.name,
+      username: users.username,
+      avatarColor: users.avatarColor,
       shareEnabled: people.shareEnabled,
       hasShareLink: sql`CASE WHEN ${people.shareTokenHash} IS NOT NULL THEN true ELSE false END`.mapWith(Boolean),
       hasInvite: sql`CASE WHEN ${people.inviteCodeHash} IS NOT NULL THEN true ELSE false END`.mapWith(Boolean),
@@ -34,6 +37,7 @@ export async function calculateGroupBalances(groupId, tx = db) {
       isDeleted: people.isDeleted,
     })
     .from(people)
+    .leftJoin(users, eq(people.linkedUserId, users.id))
     .where(and(eq(people.groupId, groupId), eq(people.isDeleted, false)));
 
   const personMap = new Map();
@@ -159,3 +163,94 @@ export async function calculateGroupBalances(groupId, tx = db) {
     },
   };
 }
+
+/**
+ * Computes user-level summary stats across all groups they belong to or host.
+ * Strictly from the user's own data only.
+ * @param {string} userId
+ * @param {object} [tx=db]
+ */
+export async function calculateUserStats(userId, tx = db) {
+  // 1. Count hosted groups
+  const [hosted] = await tx
+    .select({ count: sql`count(*)::int` })
+    .from(groups)
+    .where(and(eq(groups.createdBy, userId), eq(groups.isDeleted, false)));
+
+  // 2. Linked friend profiles (non-host)
+  const linkedPeople = await tx
+    .select({
+      id: people.id,
+      groupId: people.groupId,
+      isHost: people.isHost,
+    })
+    .from(people)
+    .innerJoin(groups, eq(people.groupId, groups.id))
+    .where(
+      and(
+        eq(people.linkedUserId, userId),
+        eq(people.isHost, false),
+        eq(people.isDeleted, false),
+        eq(groups.isDeleted, false)
+      )
+    );
+
+  // 3. Hosted people (host person rows in groups hosted by user)
+  const hostedPeople = await tx
+    .select({
+      id: people.id,
+      groupId: people.groupId,
+      isHost: people.isHost,
+    })
+    .from(people)
+    .innerJoin(groups, eq(people.groupId, groups.id))
+    .where(
+      and(
+        eq(groups.createdBy, userId),
+        eq(people.isHost, true),
+        eq(people.isDeleted, false),
+        eq(groups.isDeleted, false)
+      )
+    );
+
+  const allUserPeople = [...hostedPeople, ...linkedPeople];
+  const uniqueGroupIds = [...new Set(allUserPeople.map((p) => p.groupId))];
+
+  let totalOwedToMe = 0;
+  let totalIOwe = 0;
+
+  for (const gid of uniqueGroupIds) {
+    const balances = await calculateGroupBalances(gid, tx);
+    const myPersonIds = new Set(allUserPeople.filter((p) => p.groupId === gid).map((p) => p.id));
+
+    for (const p of balances.people) {
+      if (myPersonIds.has(p.id)) {
+        totalOwedToMe += p.groupOwesYou || 0;
+        totalIOwe += p.remainingToPay || 0;
+      }
+    }
+  }
+
+  // Pending payments awaiting approval in groups hosted by this user
+  const [hostedPending] = await tx
+    .select({ count: sql`count(*)::int` })
+    .from(payments)
+    .innerJoin(groups, eq(payments.groupId, groups.id))
+    .where(
+      and(
+        eq(groups.createdBy, userId),
+        eq(payments.status, 'pending'),
+        eq(payments.isDeleted, false),
+        eq(groups.isDeleted, false)
+      )
+    );
+
+  return {
+    groupsHosted: hosted?.count || 0,
+    linkedProfiles: linkedPeople.length,
+    totalOwedToMe,
+    totalIOwe,
+    pendingApprovals: hostedPending?.count || 0,
+  };
+}
+

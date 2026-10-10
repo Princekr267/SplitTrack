@@ -11,8 +11,10 @@ import {
   X,
   Users,
   LayoutDashboard,
+  User,
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle.jsx';
+import AnnouncementBanner from './AnnouncementBanner.jsx';
 import { m, AnimatePresence } from 'motion/react';
 import { springs } from '../../motion/tokens.js';
 
@@ -46,6 +48,7 @@ export default function Navbar({ onOpenNewGroup }) {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-surface/85 backdrop-blur-md transition-colors">
+      {user && <AnnouncementBanner />}
       <div className="mx-auto flex items-center justify-between max-w-6xl h-16 px-4 sm:px-6">
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
@@ -122,12 +125,25 @@ export default function Navbar({ onOpenNewGroup }) {
               <div className="h-4 w-px bg-border mx-1" />
 
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-surface-raised border border-border flex items-center justify-center text-text text-xs font-bold shrink-0">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-xs font-medium text-text truncate max-w-[110px]">
-                  {user.name}
-                </span>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2 p-1 -m-1 rounded-xl hover:bg-surface-raised transition-colors group"
+                  title={`View Profile (@${user.username})`}
+                >
+                  <div className="w-8 h-8 rounded-full bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-text text-xs font-bold shrink-0 group-hover:scale-105 transition-transform">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-medium text-text truncate max-w-[100px] leading-tight">
+                      {user.name}
+                    </span>
+                    {user.username && (
+                      <span className="text-[10px] text-text-muted font-mono leading-none truncate max-w-[100px]">
+                        @{user.username}
+                      </span>
+                    )}
+                  </div>
+                </Link>
 
                 <m.button
                   whileTap={{ scale: 0.92 }}
@@ -294,6 +310,15 @@ export default function Navbar({ onOpenNewGroup }) {
                         <span>Admin Console</span>
                       </Link>
                     )}
+
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-text hover:bg-surface-raised active:bg-surface-raised transition"
+                    >
+                      <User className="w-4 h-4 text-brand-500 shrink-0" />
+                      <span>My Profile</span>
+                    </Link>
 
                     <div className="pt-2 border-t border-border flex items-center justify-between">
                       <div className="flex items-center gap-2">

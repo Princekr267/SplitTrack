@@ -18,6 +18,10 @@ beforeEach(async () => {
       expenses, 
       people, 
       groups, 
+      recovery_codes,
+      password_resets,
+      reset_requests,
+      auth_rate_limits,
       users 
     CASCADE;
   `);

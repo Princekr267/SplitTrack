@@ -15,6 +15,7 @@ describe('groupService: Host person atomicity, constraints & settle lifecycle', 
       .insert(users)
       .values({
         name: 'Kabir Host',
+        username: 'kabir_host',
         email: 'kabir@splittrack.test',
         passwordHash: 'hash',
       })
@@ -43,6 +44,7 @@ describe('groupService: Host person atomicity, constraints & settle lifecycle', 
       .insert(users)
       .values({
         name: 'Host User',
+        username: 'host_dup',
         email: 'host_dup@splittrack.test',
         passwordHash: 'hash',
       })
@@ -68,6 +70,7 @@ describe('groupService: Host person atomicity, constraints & settle lifecycle', 
       .insert(users)
       .values({
         name: 'Host Settler',
+        username: 'host_settler',
         email: 'settle@splittrack.test',
         passwordHash: 'hash',
       })

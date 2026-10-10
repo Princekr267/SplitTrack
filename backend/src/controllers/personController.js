@@ -1,6 +1,6 @@
 import { eq, and, or, inArray, desc } from 'drizzle-orm';
 import { db } from '../config/db.js';
-import { people, groups, expenses, expenseSplits, payments } from '../models/index.js';
+import { people, groups, expenses, expenseSplits, payments, users } from '../models/index.js';
 import { ensureGroupNotSettled } from '../services/groupService.js';
 import { recordAuditLog } from '../services/auditService.js';
 import { generateSecureToken, hashToken } from '../services/tokenService.js';
@@ -414,6 +414,17 @@ export async function getPersonStatement(req, res, next) {
       .from(groups)
       .where(eq(groups.id, groupId));
 
+    const [hostUser] = group ? await db
+      .select({
+        id: users.id,
+        name: users.name,
+        username: users.username,
+        upiId: users.upiId,
+        showUpi: users.showUpi,
+      })
+      .from(users)
+      .where(eq(users.id, group.createdBy)) : [null];
+
     // Fetch all splits belonging to this person
     const personSplits = await db
       .select({
@@ -530,7 +541,11 @@ export async function getPersonStatement(req, res, next) {
           name: group.name,
           date: group.date,
           status: group.status,
+          hostName: hostUser?.name,
+          hostUsername: hostUser?.username,
+          ...(hostUser?.showUpi && hostUser?.upiId ? { hostUpi: hostUser.upiId } : {}),
         },
+        ...(hostUser?.showUpi && hostUser?.upiId ? { hostUpi: hostUser.upiId } : {}),
         summary: {
           shareSplitsTotal,
           paidExpensesTotal,

@@ -12,6 +12,7 @@ describe('balanceService: Real PostgreSQL Balance & Invariant Tests', () => {
       .insert(users)
       .values({
         name: 'Arjun Host',
+        username: 'arjun_host',
         email: 'arjun@splittrack.test',
         passwordHash: 'hash',
         role: 'user',
@@ -136,6 +137,7 @@ describe('balanceService: Real PostgreSQL Balance & Invariant Tests', () => {
       .insert(users)
       .values({
         name: 'Test Host',
+        username: 'test_rand',
         email: 'test_rand@splittrack.test',
         passwordHash: 'hash',
       })

@@ -14,6 +14,10 @@ import InviteAcceptPage from './pages/InviteAcceptPage.jsx';
 import FriendDashboardPage from './pages/FriendDashboardPage.jsx';
 import AdminDashboardPage from './pages/AdminDashboardPage.jsx';
 
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
+import PasswordChangedBanner from './components/common/PasswordChangedBanner.jsx';
 import Calculator from './components/calculator/Calculator.jsx';
 
 function ProtectedRoute({ children }) {
@@ -56,10 +60,13 @@ export default function App() {
           }}
           className="w-full min-h-screen flex flex-col"
         >
+          <PasswordChangedBanner />
           <Routes location={location}>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* Level 1: Public Read-Only Share Link */}
             <Route path="/s/:token" element={<PublicStatementPage />} />
@@ -97,6 +104,15 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <GroupDetailPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
                 </ProtectedRoute>
               }
             />

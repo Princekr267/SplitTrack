@@ -72,6 +72,10 @@ export async function ensureGroupNotSettled(groupId, tx = db) {
     throw new GroupOperationError('Group not found', 404);
   }
 
+  if (group.isFrozen) {
+    throw new GroupOperationError('This group is frozen by an admin', 409);
+  }
+
   if (group.status === 'settled') {
     throw new GroupOperationError(
       'This group is settled and locked. Please reopen the group to add or modify records.'

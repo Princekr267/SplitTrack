@@ -33,39 +33,45 @@ async function seed() {
     .insert(users)
     .values({
       name: 'Platform Admin',
+      username: 'admin',
       email: 'admin@splittrack.com',
       passwordHash: adminPasswordHash,
       role: 'admin',
       isActive: true,
+      tokenVersion: 0,
     })
     .returning();
-  console.log('✅ Created Admin:', admin.email);
+  console.log('✅ Created Admin:', admin.username);
 
   // 2. Create Demo Host
   const [host] = await db
     .insert(users)
     .values({
       name: 'Vikram Host',
+      username: 'vikram',
       email: 'host@splittrack.com',
       passwordHash: hostPasswordHash,
       role: 'user',
       isActive: true,
+      tokenVersion: 0,
     })
     .returning();
-  console.log('✅ Created Host:', host.email);
+  console.log('✅ Created Host:', host.username);
 
   // 3. Create Demo Friend User
   const [friendUser] = await db
     .insert(users)
     .values({
       name: 'Karan Patel',
+      username: 'karan',
       email: 'friend@splittrack.com',
       passwordHash: friendPasswordHash,
       role: 'user',
       isActive: true,
+      tokenVersion: 0,
     })
     .returning();
-  console.log('✅ Created Friend User:', friendUser.email);
+  console.log('✅ Created Friend User:', friendUser.username);
 
   // 4. Create Demo Group with Host Person
   const { group, hostPerson } = await createGroupWithHost({

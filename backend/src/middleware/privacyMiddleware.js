@@ -30,6 +30,7 @@ export async function resolveViewingPerson(req, res, next) {
           isHost: people.isHost,
           linkedUserId: people.linkedUserId,
           shareEnabled: people.shareEnabled,
+          lastViewedAt: people.lastViewedAt,
           isDeleted: people.isDeleted,
         })
         .from(people)
@@ -76,6 +77,15 @@ export async function resolveViewingPerson(req, res, next) {
           success: false,
           error: { code: 'STATEMENT_NOT_FOUND', message: 'This shared statement link is invalid.' },
         });
+      }
+
+      // Update last_viewed_at at most once per hour
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      if (!person.lastViewedAt || new Date(person.lastViewedAt) < oneHourAgo) {
+        db.update(people)
+          .set({ lastViewedAt: new Date() })
+          .where(eq(people.id, person.id))
+          .catch(() => {});
       }
 
       req.person = person;

@@ -1,18 +1,53 @@
 import { eq, and } from 'drizzle-orm';
 import { db } from '../config/db.js';
-import { groups } from '../models/index.js';
+import { groups, users } from '../models/index.js';
 
-export function requireAdmin(req, res, next) {
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      error: {
-        code: 'FORBIDDEN',
-        message: 'Administrator privilege required.',
-      },
-    });
+export async function requireAdmin(req, res, next) {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Authentication required.',
+        },
+      });
+    }
+
+    const [freshUser] = await db
+      .select({
+        role: users.role,
+        isActive: users.isActive,
+      })
+      .from(users)
+      .where(eq(users.id, req.user.id));
+
+    if (!freshUser || !freshUser.isActive) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'ACCOUNT_DISABLED',
+          message: 'This account has been disabled.',
+        },
+      });
+    }
+
+    if (freshUser.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Administrator privilege required.',
+        },
+      });
+    }
+
+    req.user.role = freshUser.role;
+    req.user.isActive = freshUser.isActive;
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 }
 
 export async function requireGroupHost(req, res, next) {

@@ -20,7 +20,7 @@ describe('privacyMiddleware: Strict Member Scoping & Public Share Link Privacy',
 
     const [host] = await db
       .insert(users)
-      .values({ name: 'Host', email: 'host_privacy@test.com', passwordHash: 'hash' })
+      .values({ name: 'Host', username: 'host_privacy', email: 'host_privacy@test.com', passwordHash: 'hash' })
       .returning();
 
     const { group } = await createGroupWithHost({ name: 'Secret Group', user: host });
@@ -44,7 +44,7 @@ describe('privacyMiddleware: Strict Member Scoping & Public Share Link Privacy',
   it('ensures public view link returns strictly only that person profile data, never other members', async () => {
     const [host] = await db
       .insert(users)
-      .values({ name: 'Host Arjun', email: 'arjun_priv@test.com', passwordHash: 'hash' })
+      .values({ name: 'Host Arjun', username: 'arjun_priv', email: 'arjun_priv@test.com', passwordHash: 'hash' })
       .returning();
 
     const { group } = await createGroupWithHost({ name: 'Private Outing', user: host });
@@ -75,12 +75,12 @@ describe('privacyMiddleware: Strict Member Scoping & Public Share Link Privacy',
   it('prevents a friend from accessing host-only routes or modifying the group', async () => {
     const [host] = await db
       .insert(users)
-      .values({ name: 'Host V', email: 'host_v@test.com', passwordHash: 'hash' })
+      .values({ name: 'Host V', username: 'host_v', email: 'host_v@test.com', passwordHash: 'hash' })
       .returning();
 
     const [friendUser] = await db
       .insert(users)
-      .values({ name: 'Friend F', email: 'friend_f@test.com', passwordHash: 'hash' })
+      .values({ name: 'Friend F', username: 'friend_f', email: 'friend_f@test.com', passwordHash: 'hash' })
       .returning();
 
     const { group } = await createGroupWithHost({ name: 'Protected Group', user: host });
@@ -111,9 +111,9 @@ describe('privacyMiddleware: Strict Member Scoping & Public Share Link Privacy',
 
 describe('Change 1: Friend Bill Visibility Permission', () => {
   async function setup() {
-    const [hostUser] = await db.insert(users).values({ name: 'Host', email: 'h@test.com', passwordHash: 'hash' }).returning();
-    const [friendUser] = await db.insert(users).values({ name: 'Friend', email: 'f@test.com', passwordHash: 'hash' }).returning();
-    const [outsiderUser] = await db.insert(users).values({ name: 'Outsider', email: 'o@test.com', passwordHash: 'hash' }).returning();
+    const [hostUser] = await db.insert(users).values({ name: 'Host', username: 'host_p', email: 'h@test.com', passwordHash: 'hash' }).returning();
+    const [friendUser] = await db.insert(users).values({ name: 'Friend', username: 'friend_p', email: 'f@test.com', passwordHash: 'hash' }).returning();
+    const [outsiderUser] = await db.insert(users).values({ name: 'Outsider', username: 'outsider_p', email: 'o@test.com', passwordHash: 'hash' }).returning();
 
     const { group, hostPerson } = await createGroupWithHost({ name: 'Test Group', user: hostUser });
 
@@ -212,8 +212,8 @@ describe('Change 1: Friend Bill Visibility Permission', () => {
     const { friendUser, friendPerson } = await setup();
 
     // Setup a second group
-    const [host2] = await db.insert(users).values({ name: 'H2', email: 'h2@test.com', passwordHash: 'x' }).returning();
-    const [friend2] = await db.insert(users).values({ name: 'F2', email: 'f2@test.com', passwordHash: 'x' }).returning();
+    const [host2] = await db.insert(users).values({ name: 'H2', username: 'host2_p', email: 'h2@test.com', passwordHash: 'x' }).returning();
+    const [friend2] = await db.insert(users).values({ name: 'F2', username: 'friend2_p', email: 'f2@test.com', passwordHash: 'x' }).returning();
     const { group: group2, hostPerson: host2Person } = await createGroupWithHost({ name: 'Group2', user: host2 });
     const [friend2Person] = await db.insert(people).values({
       groupId: group2.id, name: 'F2', linkedUserId: friend2.id, canViewAllBills: true,
@@ -274,7 +274,7 @@ describe('Change 1: Friend Bill Visibility Permission', () => {
     expect(res2.body.error.code).toBe('CANNOT_SET_HOST');
 
     // Host of group2 cannot touch group1
-    const [host2] = await db.insert(users).values({ name: 'H2', email: 'hh2@test.com', passwordHash: 'x' }).returning();
+    const [host2] = await db.insert(users).values({ name: 'H2', username: 'host2_other', email: 'hh2@test.com', passwordHash: 'x' }).returning();
     await createGroupWithHost({ name: 'Other', user: host2 });
     const host2Token = makeToken(host2.id);
     const res3 = await request(app)

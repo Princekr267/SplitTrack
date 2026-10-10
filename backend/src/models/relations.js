@@ -6,9 +6,30 @@ import { expenses, expenseSplits } from './expenses.js';
 import { payments } from './payments.js';
 import { auditLogs } from './auditLogs.js';
 
+import { recoveryCodes } from './recoveryCodes.js';
+import { passwordResets } from './passwordResets.js';
+import { resetRequests } from './resetRequests.js';
+
 export const usersRelations = relations(users, ({ many }) => ({
   createdGroups: many(groups),
   linkedPeople: many(people),
+  recoveryCodes: many(recoveryCodes),
+  passwordResets: many(passwordResets),
+  resetRequests: many(resetRequests),
+}));
+
+export const recoveryCodesRelations = relations(recoveryCodes, ({ one }) => ({
+  user: one(users, { fields: [recoveryCodes.userId], references: [users.id] }),
+}));
+
+export const passwordResetsRelations = relations(passwordResets, ({ one }) => ({
+  user: one(users, { fields: [passwordResets.userId], references: [users.id] }),
+  createdByAdmin: one(users, { fields: [passwordResets.createdByAdminId], references: [users.id] }),
+}));
+
+export const resetRequestsRelations = relations(resetRequests, ({ one }) => ({
+  user: one(users, { fields: [resetRequests.userId], references: [users.id] }),
+  handledByAdmin: one(users, { fields: [resetRequests.handledBy], references: [users.id] }),
 }));
 
 export const groupsRelations = relations(groups, ({ one, many }) => ({

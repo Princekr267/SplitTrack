@@ -174,6 +174,19 @@ npm test
 - `GET /groups`: Platform-wide group registry
 - `GET /audit-logs`: Query immutable audit trail logs with before/after diffs
 
+### Server Administration CLI Commands (Backend)
+Run these commands inside the `backend/` directory to manage administrative access:
+- **Create Admin Account**:
+  ```bash
+  npm run create-admin
+  ```
+  Interactively prompts for username, display name, optional email/phone, and password. Creates an administrator with **no recovery codes** (admin accounts cannot be reset via web self-service).
+- **Reset Admin Password**:
+  ```bash
+  npm run reset-admin-password
+  ```
+  Interactively prompts for admin username and new password. Enforces password security policy, hashes with bcrypt, updates DB, increments `token_version` by 1 to immediately terminate all active sessions, and logs an audit trail row (`actor: CLI`, reason: `server command`). Does not set a user-facing notice banner.
+
 ---
 
 ## 📄 License

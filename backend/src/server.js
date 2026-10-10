@@ -15,6 +15,8 @@ import shareRoutes from './routes/shareRoutes.js';
 import inviteRoutes from './routes/inviteRoutes.js';
 import friendRoutes from './routes/friendRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import meRoutes from './routes/meRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 
 export const app = express();
 
@@ -57,6 +59,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/me', meRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/groups/:groupId/people', personRoutes);
 app.use('/api/groups/:groupId/expenses', expenseRoutes);
@@ -65,6 +68,7 @@ app.use('/api/s', shareRoutes);
 app.use('/api/invite', inviteRoutes);
 app.use('/api/friend', friendRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Centralized error handling
 app.use(errorHandler);

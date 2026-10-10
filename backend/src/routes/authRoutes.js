@@ -1,15 +1,53 @@
 import { Router } from 'express';
-import { register, login, logout, me } from '../controllers/authController.js';
+import {
+  register,
+  login,
+  logout,
+  me,
+  dismissPasswordNotice,
+  checkUsernameAvailable,
+  recoverWithCode,
+  submitResetRequest,
+  validateResetToken,
+  resetPassword,
+} from '../controllers/authController.js';
 import { validate } from '../middleware/validate.js';
 import { authenticate } from '../middleware/authMiddleware.js';
-import { authLimiter } from '../middleware/rateLimiter.js';
-import { registerSchema, loginSchema } from '../validations/authValidation.js';
+import {
+  registerSchema,
+  loginSchema,
+  recoverSchema,
+  resetRequestSchema,
+  resetPasswordSchema,
+} from '../validations/authValidation.js';
 
 const router = Router();
 
-router.post('/register', authLimiter, validate(registerSchema), register);
-router.post('/login', authLimiter, validate(loginSchema), login);
+// Registration & Username availability
+router.get('/username-available', checkUsernameAvailable);
+router.get('/check-username', checkUsernameAvailable);
+router.post('/register', validate(registerSchema), register);
+
+// Login & Logout
+router.post('/login', validate(loginSchema), login);
 router.post('/logout', authenticate, logout);
+
+// Recovery code redemption
+router.post('/recover', validate(recoverSchema), recoverWithCode);
+router.post('/recover-with-code', validate(recoverSchema), recoverWithCode);
+
+// Reset requests to admin
+router.post('/reset-requests', validate(resetRequestSchema), submitResetRequest);
+router.post('/request-reset', validate(resetRequestSchema), submitResetRequest);
+
+// Reset password via admin token or short code
+router.get('/reset-password/validate', validateResetToken);
+router.get('/validate-reset-token', validateResetToken);
+router.post('/reset-password', validate(resetPasswordSchema), resetPassword);
+
+// User profile & notice dismissal
 router.get('/me', authenticate, me);
+router.post('/password-notice/dismiss', authenticate, dismissPasswordNotice);
+router.post('/me/dismiss-password-notice', authenticate, dismissPasswordNotice);
 
 export default router;

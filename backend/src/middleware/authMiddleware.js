@@ -33,16 +33,33 @@ export async function authenticate(req, res, next) {
       });
     }
 
+    const userId = decoded.sub || decoded.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'INVALID_TOKEN',
+          message: 'Invalid session payload.',
+        },
+      });
+    }
+
     const [user] = await db
       .select({
         id: users.id,
         name: users.name,
+        username: users.username,
         email: users.email,
+        phone: users.phone,
         role: users.role,
         isActive: users.isActive,
+        tokenVersion: users.tokenVersion,
+        passwordChangeNoticePending: users.passwordChangeNoticePending,
+        passwordChangeMethod: users.passwordChangeMethod,
+        passwordChangedAt: users.passwordChangedAt,
       })
       .from(users)
-      .where(eq(users.id, decoded.userId));
+      .where(eq(users.id, userId));
 
     if (!user || !user.isActive) {
       return res.status(401).json({
@@ -50,6 +67,17 @@ export async function authenticate(req, res, next) {
         error: {
           code: 'ACCOUNT_DISABLED',
           message: 'This account has been disabled or no longer exists.',
+        },
+      });
+    }
+
+    // Check token version if present in payload
+    if (decoded.tv !== undefined && decoded.tv !== user.tokenVersion) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'SESSION_REVOKED',
+          message: 'Your session has been signed out. Please log in again.',
         },
       });
     }

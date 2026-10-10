@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 import { groups } from './groups.js';
 
@@ -13,6 +13,7 @@ export const auditLogs = pgTable(
     entityType: varchar('entity_type', { length: 50 }).notNull(),
     entityId: uuid('entity_id').notNull(),
     groupId: uuid('group_id').references(() => groups.id, { onDelete: 'restrict' }),
+    reason: text('reason'),
     before: jsonb('before'),
     after: jsonb('after'),
     ipAddress: varchar('ip_address', { length: 100 }).default('').notNull(),

@@ -1,6 +1,6 @@
 import { eq, and, or, inArray, desc, asc } from 'drizzle-orm';
 import { db } from '../config/db.js';
-import { people, groups, expenses, expenseSplits, payments } from '../models/index.js';
+import { people, groups, expenses, expenseSplits, payments, users } from '../models/index.js';
 import { recordAuditLog } from '../services/auditService.js';
 import { ensureGroupNotSettled } from '../services/groupService.js';
 
@@ -75,10 +75,17 @@ export async function getGroupBillsForFriend(req, res, next) {
       })),
     }));
 
-    // Also return the group member name list (no balances, no phones, no hashes)
+    // Also return the group member name list with usernames for linked members
     const members = await db
-      .select({ id: people.id, name: people.name, isHost: people.isHost })
+      .select({
+        id: people.id,
+        name: people.name,
+        isHost: people.isHost,
+        accountName: users.name,
+        username: users.username,
+      })
       .from(people)
+      .leftJoin(users, eq(people.linkedUserId, users.id))
       .where(and(eq(people.groupId, person.groupId), eq(people.isDeleted, false)));
 
     res.json({ success: true, data: { expenses: data, members } });
@@ -126,9 +133,23 @@ export async function getLinkedProfiles(req, res, next) {
         name: groups.name,
         date: groups.date,
         status: groups.status,
+        createdBy: groups.createdBy,
       })
       .from(groups)
       .where(and(inArray(groups.id, groupIds), eq(groups.isDeleted, false)));
+
+    const hostUserIds = [...new Set(groupList.map((g) => g.createdBy))];
+    const hostUsers = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        username: users.username,
+        upiId: users.upiId,
+        showUpi: users.showUpi,
+      })
+      .from(users)
+      .where(inArray(users.id, hostUserIds));
+    const hostUserMap = new Map(hostUsers.map((u) => [u.id, u]));
 
     const groupMap = new Map();
     groupList.forEach((g) => groupMap.set(g.id, g));
@@ -191,9 +212,18 @@ export async function getLinkedProfiles(req, res, next) {
       const remainingToPay = Math.max(0, -net);
       const groupOwesYou = Math.max(0, net);
 
+      const host = hostUserMap.get(group.createdBy);
       profileCards.push({
         person,
-        group,
+        group: {
+          id: group.id,
+          name: group.name,
+          date: group.date,
+          status: group.status,
+          hostName: host?.name,
+          hostUsername: host?.username,
+          ...(host?.showUpi && host?.upiId ? { hostUpi: host.upiId } : {}),
+        },
         summary: {
           shareSplitsTotal,
           acceptedSentTotal: acceptedSent,

@@ -392,7 +392,13 @@ export default function FriendDashboardPage() {
                         </div>
                         <span className="text-xs text-text-muted block mt-0.5">
                           Profile: <strong className="text-text font-semibold">{person.name}</strong>
-                          {person.phone && ` • ${person.phone}`}
+                          {group.hostName && (
+                            <>
+                              {' '}• Host: <strong className="text-text font-semibold">{group.hostName}</strong>
+                              {group.hostUsername && <span className="font-mono text-text-muted/80 ml-1">@{group.hostUsername}</span>}
+                            </>
+                          )}
+                          {group.hostUpi && <span className="text-emerald-600 dark:text-emerald-400 font-mono ml-1.5 font-medium">• UPI: {group.hostUpi}</span>}
                         </span>
                       </div>
 
@@ -451,6 +457,16 @@ export default function FriendDashboardPage() {
                       </div>
                     </div>
 
+                    {/* Admin Frozen Notice */}
+                    {group.isFrozen && (
+                      <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">
+                          This group is currently frozen by an administrator. Submitting repayments is paused.
+                        </span>
+                      </div>
+                    )}
+
                     {/* Bill Visibility Privacy Banner */}
                     {!item.person.canViewAllBills ? (
                       <div className="p-3 rounded-xl bg-surface-raised border border-border flex items-center gap-2.5 text-xs text-text-muted">
@@ -494,8 +510,19 @@ export default function FriendDashboardPage() {
                         <span>{isExpanded ? 'Hide Activity Details' : 'View Itemized Activity'}</span>
                       </m.button>
 
-                      <div className="flex items-center gap-2">
-                        {group.status === 'active' && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {group.hostUpi && owesMoney && (
+                          <a
+                            href={`upi://pay?pa=${encodeURIComponent(group.hostUpi)}&pn=${encodeURIComponent(group.hostName || 'Host')}&am=${(summary.remainingToPay / 100).toFixed(2)}&cu=INR`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition-colors shadow-sm"
+                            title={`Pay ₹${(summary.remainingToPay / 100).toFixed(2)} via UPI App to ${group.hostUpi}`}
+                          >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            <span>Pay with UPI App</span>
+                          </a>
+                        )}
+
+                        {group.status === 'active' && !group.isFrozen && (
                           <m.button
                             whileTap={{ scale: 0.97 }}
                             transition={springs.snappy}

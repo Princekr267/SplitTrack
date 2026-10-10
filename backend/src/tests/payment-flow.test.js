@@ -14,7 +14,7 @@ describe('paymentFlow: Friend Submission, Host Inbox (Accept/Reject), & Resubmis
     // 1. Host creates group
     const [host] = await db
       .insert(users)
-      .values({ name: 'Vikram Host', email: 'host_flow@test.com', passwordHash: 'hash' })
+      .values({ name: 'Vikram Host', username: 'host_flow', email: 'host_flow@test.com', passwordHash: 'hash' })
       .returning();
 
     const { group, hostPerson } = await createGroupWithHost({ name: 'Road Trip', user: host });
@@ -22,7 +22,7 @@ describe('paymentFlow: Friend Submission, Host Inbox (Accept/Reject), & Resubmis
     // 2. Friend account registered and linked to profile
     const [friendUser] = await db
       .insert(users)
-      .values({ name: 'Karan Friend', email: 'karan_flow@test.com', passwordHash: 'hash' })
+      .values({ name: 'Karan Friend', username: 'karan_flow', email: 'karan_flow@test.com', passwordHash: 'hash' })
       .returning();
 
     const [friendPerson] = await db
@@ -146,14 +146,14 @@ describe('paymentFlow: Friend Submission, Host Inbox (Accept/Reject), & Resubmis
   it('allows friend to submit payment for self to other member via group payment endpoint', async () => {
     const [host] = await db
       .insert(users)
-      .values({ name: 'Host Arjun', email: 'host_group_pay@test.com', passwordHash: 'hash' })
+      .values({ name: 'Host Arjun', username: 'host_group_pay', email: 'host_group_pay@test.com', passwordHash: 'hash' })
       .returning();
 
     const { group, hostPerson } = await createGroupWithHost({ name: 'Dinner Group', user: host });
 
     const [friendUser] = await db
       .insert(users)
-      .values({ name: 'Friend Bob', email: 'bob_group_pay@test.com', passwordHash: 'hash' })
+      .values({ name: 'Friend Bob', username: 'bob_group_pay', email: 'bob_group_pay@test.com', passwordHash: 'hash' })
       .returning();
 
     const [bobPerson] = await db

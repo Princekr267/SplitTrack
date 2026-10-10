@@ -6,6 +6,8 @@ import { users } from '../models/index.js';
 import jwt from 'jsonwebtoken';
 import env from '../config/env.js';
 
+import bcrypt from 'bcryptjs';
+
 describe('adminController: System stats, User management & Audit trail inspection', () => {
   it('enforces requireAdmin guard: forbids regular users and unauthenticated requests', async () => {
     // 1. Unauthenticated request
@@ -17,6 +19,7 @@ describe('adminController: System stats, User management & Audit trail inspectio
       .insert(users)
       .values({
         name: 'Normal User',
+        username: 'regular_user',
         email: 'regular_user@splittrack.test',
         passwordHash: 'hash',
         role: 'user',
@@ -35,12 +38,14 @@ describe('adminController: System stats, User management & Audit trail inspectio
 
   it('allows admin to fetch system stats, list users, and toggle user active status', async () => {
     // 1. Create Admin
+    const passwordHash = await bcrypt.hash('adminPassword123', 10);
     const [adminUser] = await db
       .insert(users)
       .values({
         name: 'System Superadmin',
+        username: 'system_superadmin',
         email: 'superadmin@splittrack.test',
-        passwordHash: 'hash',
+        passwordHash,
         role: 'admin',
       })
       .returning();
@@ -52,8 +57,9 @@ describe('adminController: System stats, User management & Audit trail inspectio
       .insert(users)
       .values({
         name: 'Target Account',
+        username: 'target_account',
         email: 'target_account@splittrack.test',
-        passwordHash: 'hash',
+        passwordHash,
         isActive: true,
       })
       .returning();
@@ -81,7 +87,11 @@ describe('adminController: System stats, User management & Audit trail inspectio
     const toggleRes = await request(app)
       .patch(`/api/admin/users/${targetUser.id}/status`)
       .set('Cookie', [`splittrack_token=${adminToken}`])
-      .send({ isActive: false });
+      .send({
+        isActive: false,
+        reason: 'Account violation review',
+        currentPassword: 'adminPassword123',
+      });
 
     expect(toggleRes.status).toBe(200);
     expect(toggleRes.body.data.isActive).toBe(false);
@@ -90,14 +100,18 @@ describe('adminController: System stats, User management & Audit trail inspectio
     const selfDeactRes = await request(app)
       .patch(`/api/admin/users/${adminUser.id}/status`)
       .set('Cookie', [`splittrack_token=${adminToken}`])
-      .send({ isActive: false });
+      .send({
+        isActive: false,
+        reason: 'Attempt self deactivation',
+        currentPassword: 'adminPassword123',
+      });
 
     expect(selfDeactRes.status).toBe(400);
     expect(selfDeactRes.body.error.code).toBe('CANNOT_SELF_DEACTIVATE');
 
     // 6. Admin queries audit logs
     const auditRes = await request(app)
-      .get('/api/admin/audit-logs?action=TOGGLE_USER_STATUS')
+      .get('/api/admin/audit-logs?action=admin.user.disable')
       .set('Cookie', [`splittrack_token=${adminToken}`]);
 
     expect(auditRes.status).toBe(200);

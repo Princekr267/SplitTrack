@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { Split, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Split, ArrowRight, Eye, EyeOff, AlertCircle, KeyRound, Shield, Users } from 'lucide-react';
 import ThemeToggle from '../components/common/ThemeToggle.jsx';
 import Button from '../components/common/Button.jsx';
 import Input from '../components/common/Input.jsx';
@@ -11,7 +11,7 @@ import { m, AnimatePresence } from 'motion/react';
 import { springs } from '../motion/tokens.js';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,15 +27,16 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!email || !password) return;
+    const cleanUsername = username.trim().toLowerCase();
+    if (!cleanUsername || !password) return;
 
     try {
       setLoading(true);
-      await login(email, password);
+      await login(cleanUsername, password);
       addToast('Welcome back!', 'success');
       navigate(returnUrl);
     } catch (err) {
-      const msg = err.message || 'Invalid email or password';
+      const msg = err.message || 'Invalid username or password';
       setErrorMessage(msg);
       addToast(msg, 'error');
     } finally {
@@ -83,6 +84,7 @@ export default function LoginPage() {
                 exit={{ opacity: 0, y: -4, scale: 0.98 }}
                 transition={springs.snappy}
                 className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2"
+                role="alert"
               >
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMessage}</span>
@@ -92,17 +94,31 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Email Address"
-              type="email"
+              label="Username"
+              type="text"
+              autoFocus
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck="false"
               required
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="e.g. vikram"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
+              hint="Enter your unique SplitTrack username"
             />
 
             <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-text">Password</label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1 font-medium"
+                >
+                  <KeyRound className="w-3 h-3" />
+                  Forgot password?
+                </Link>
+              </div>
               <Input
-                label="Password"
                 type={showPassword ? 'text' : 'password'}
                 required
                 placeholder="••••••••"
@@ -135,6 +151,101 @@ export default function LoginPage() {
               Sign In
             </Button>
           </form>
+
+          <div className="pt-4 border-t border-border/80 space-y-3">
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <span className="relative px-3 bg-surface text-[10px] font-bold tracking-wider text-text-muted uppercase">
+                Fast Demo Sign-In
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* Demo Host */}
+              <m.button
+                type="button"
+                whileHover={{ y: -1, scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                transition={springs.snappy}
+                onClick={async () => {
+                  setUsername('vikram');
+                  setPassword('hostpassword123');
+                  try {
+                    setLoading(true);
+                    await login('vikram', 'hostpassword123');
+                    addToast('Signed in as Demo Host (Vikram)', 'success');
+                    navigate(returnUrl);
+                  } catch (err) {
+                    setErrorMessage(err.message || 'Failed to sign in as host');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="group relative flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-raised/60 hover:bg-surface-raised border border-border hover:border-emerald-500/40 transition-all text-left cursor-pointer shadow-xs"
+              >
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-bold text-text group-hover:text-emerald-500 transition-colors">
+                      Demo Host
+                    </span>
+                    <span className="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-surface border border-border text-text-muted">
+                      Host
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-text-muted block truncate mt-0.5">
+                    @vikram • Trip Group
+                  </span>
+                </div>
+              </m.button>
+
+              {/* Demo Admin */}
+              <m.button
+                type="button"
+                whileHover={{ y: -1, scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                transition={springs.snappy}
+                onClick={async () => {
+                  setUsername('admin');
+                  setPassword('adminpassword123');
+                  try {
+                    setLoading(true);
+                    await login('admin', 'adminpassword123');
+                    addToast('Signed in as Demo Admin', 'success');
+                    navigate('/admin');
+                  } catch (err) {
+                    setErrorMessage(err.message || 'Failed to sign in as admin');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="group relative flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-raised/60 hover:bg-surface-raised border border-border hover:border-brand-500/40 transition-all text-left cursor-pointer shadow-xs"
+              >
+                <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 text-brand-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-bold text-text group-hover:text-brand-500 transition-colors">
+                      Demo Admin
+                    </span>
+                    <span className="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-surface border border-border text-text-muted">
+                      Admin
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-text-muted block truncate mt-0.5">
+                    @admin • Oversight
+                  </span>
+                </div>
+              </m.button>
+            </div>
+          </div>
         </Card>
       </div>
     </div>

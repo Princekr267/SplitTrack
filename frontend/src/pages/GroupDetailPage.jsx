@@ -13,6 +13,7 @@ import AddPersonModal from '../components/forms/AddPersonModal.jsx';
 import AddExpenseModal from '../components/forms/AddExpenseModal.jsx';
 import AddPaymentModal from '../components/forms/AddPaymentModal.jsx';
 import PersonCopyDropdown from '../components/common/PersonCopyDropdown.jsx';
+import PersonName from '../components/common/PersonName.jsx';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
@@ -358,7 +359,7 @@ ${balanceLine}`);
             </div>
           )}
 
-          {isHost && group.status === 'active' && (
+          {isHost && group.status === 'active' && !group.isFrozen && (
             <div className="flex items-center gap-2">
               <Button
                 size="xs"
@@ -387,7 +388,7 @@ ${balanceLine}`);
               <ArrowLeft className="w-3.5 h-3.5" />
               Back to Dashboard
             </Link>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-2xl sm:text-3xl font-extrabold text-text tracking-tight">
                 {group.name}
               </h1>
@@ -398,6 +399,11 @@ ${balanceLine}`);
               >
                 {group.status === 'active' ? 'Active' : 'Settled (Locked)'}
               </Badge>
+              {group.isFrozen && (
+                <Badge variant="danger" size="sm">
+                  🔒 Frozen by Admin
+                </Badge>
+              )}
             </div>
             {group.description && (
               <p className="text-xs text-text-muted max-w-2xl">{group.description}</p>
@@ -406,7 +412,7 @@ ${balanceLine}`);
 
           {/* Group-level action buttons (Requirement 2 & 3: show only authorized buttons) */}
           <div className="flex items-center gap-2 shrink-0">
-            {group.status === 'active' ? (
+            {group.status === 'active' && !group.isFrozen ? (
               <>
                 {isHost && (
                   <>
@@ -466,6 +472,20 @@ ${balanceLine}`);
             )}
           </div>
         </div>
+
+        {/* Admin Frozen Dispute Lock Banner */}
+        {group.isFrozen && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-start gap-3 shadow-xs">
+            <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold">This group is frozen by an administrator</h3>
+              <p className="text-xs leading-relaxed opacity-90">
+                {group.frozenReason ? `Reason: "${group.frozenReason}". ` : ''}
+                All expense modifications, entries, and repayments are locked pending administrator review.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Ledger Summary Cards Bento */}
         {summary && (
@@ -621,9 +641,12 @@ ${balanceLine}`);
                   const owesMoney = person.remainingToPay > 0;
                   const isOwed = person.groupOwesYou > 0;
                   const personTint = owesMoney ? 'danger' : isOwed ? 'success' : 'neutral';
-                  const initials = person.name
-                    ? person.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-                    : 'U';
+                  const initials = (person.accountName || person.name || 'U')
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase();
 
                   return (
                     <m.div key={person.id} variants={listItem}>
@@ -642,9 +665,7 @@ ${balanceLine}`);
 
                           <div className="min-w-0 space-y-0.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <h3 className="font-bold text-sm sm:text-base text-text truncate">
-                                {person.name}
-                              </h3>
+                              <PersonName person={person} />
                               {person.isHost && (
                                 <Badge variant="brand" size="xs">
                                   Host
@@ -1014,7 +1035,7 @@ ${balanceLine}`);
       </main>
 
       {/* Mobile Floating Action Button (FAB) - Host only */}
-      {isHost && group.status === 'active' && (
+      {isHost && group.status === 'active' && !group.isFrozen && (
         <div className="fixed bottom-6 right-6 sm:hidden z-30 flex flex-col gap-2">
           <m.button
             whileTap={{ scale: 0.92 }}

@@ -13,7 +13,7 @@ describe('inviteController: Single-Use Claim Flow & Concurrency Race Protection'
     // 1. Host creates group
     const [host] = await db
       .insert(users)
-      .values({ name: 'Host H', email: 'host_claim@test.com', passwordHash: 'hash' })
+      .values({ name: 'Host H', username: 'host_claim', email: 'host_claim@test.com', passwordHash: 'hash' })
       .returning();
 
     const { group } = await createGroupWithHost({ name: 'Dinner Group', user: host });
@@ -35,7 +35,7 @@ describe('inviteController: Single-Use Claim Flow & Concurrency Race Protection'
     // 3. Registered friend logs in
     const [friendUser] = await db
       .insert(users)
-      .values({ name: 'Suresh User', email: 'suresh@test.com', passwordHash: 'hash' })
+      .values({ name: 'Suresh User', username: 'suresh_user', email: 'suresh@test.com', passwordHash: 'hash' })
       .returning();
 
     const friendToken = jwt.sign({ userId: friendUser.id }, env.JWT_SECRET);
@@ -62,7 +62,7 @@ describe('inviteController: Single-Use Claim Flow & Concurrency Race Protection'
   it('protects against concurrent claim race conditions (only 1 can succeed)', async () => {
     const [host] = await db
       .insert(users)
-      .values({ name: 'Host Race', email: 'host_race@test.com', passwordHash: 'hash' })
+      .values({ name: 'Host Race', username: 'host_race', email: 'host_race@test.com', passwordHash: 'hash' })
       .returning();
 
     const { group } = await createGroupWithHost({ name: 'Race Group', user: host });
@@ -80,12 +80,12 @@ describe('inviteController: Single-Use Claim Flow & Concurrency Race Protection'
     // Create 2 distinct friend accounts racing to claim
     const [userA] = await db
       .insert(users)
-      .values({ name: 'Competitor A', email: 'user_a@test.com', passwordHash: 'hash' })
+      .values({ name: 'Competitor A', username: 'competitor_a', email: 'user_a@test.com', passwordHash: 'hash' })
       .returning();
 
     const [userB] = await db
       .insert(users)
-      .values({ name: 'Competitor B', email: 'user_b@test.com', passwordHash: 'hash' })
+      .values({ name: 'Competitor B', username: 'competitor_b', email: 'user_b@test.com', passwordHash: 'hash' })
       .returning();
 
     const tokenA = jwt.sign({ userId: userA.id }, env.JWT_SECRET);

@@ -64,11 +64,14 @@ export default function PersonCopyDropdown({ group, person, isHost = false }) {
       ? `• Balance: Host owes you ${formatINR(person.groupOwesYou)}`
       : `• Balance: Fully Settled (₹0.00)`;
 
+    const hostUpi = group?.hostUpi;
+    const upiLine = hostUpi ? `\n• Pay to UPI: ${hostUpi}` : '';
+
     return `SplitTrack • ${group.name}
 Statement for ${person.name}:
 • Total Share: ${formatINR(person.shareSplitsTotal)}
 • Paid / Repaid: ${formatINR(person.acceptedSentPaymentsTotal)}
-${balanceLine}`;
+${balanceLine}${upiLine}`;
   };
 
   const handleCopyShort = async () => {
@@ -116,8 +119,10 @@ ${balanceLine}`;
       const balanceStr = owes
         ? `*Balance Due (Owes Host):* *${formatINR(data.summary.remainingToPay)}*`
         : isOwed
-        ? `*Group Owes You:* *${formatINR(data.summary.groupOwesYou)}*`
+        ? `*Group Owes You:* *${formatINR(data.summary.groupOwedYou || data.summary.groupOwesYou)}*`
         : `*Status:* *Settled (₹0.00)*`;
+
+      const upiStr = data.hostUpi ? `\nPay to UPI: ${data.hostUpi}` : '';
 
       const detailedText = `*SplitTrack: ${group.name}* 💸
 Statement for: *${person.name}*
@@ -131,7 +136,7 @@ ${payLines}
 ━━━━━━━━━━━━━━━━━━━
 *Total Share:* ${formatINR(data.summary.shareSplitsTotal)}
 *Total Repaid:* ${formatINR(data.summary.acceptedSentTotal)}
-${balanceStr}`;
+${balanceStr}${upiStr}`;
 
       await navigator.clipboard.writeText(detailedText);
       markCopied();

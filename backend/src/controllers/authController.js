@@ -1,15 +1,32 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and, desc } from 'drizzle-orm';
 import env from '../config/env.js';
 import { db } from '../config/db.js';
-import { users } from '../models/index.js';
+import { users, recoveryCodes, passwordResets, resetRequests, people } from '../models/index.js';
 import { COOKIE_NAME } from '../middleware/authMiddleware.js';
+import {
+  generateEightRecoveryCodes,
+  verifyRecoveryCode,
+  hashResetToken,
+} from '../services/recoveryService.js';
+import {
+  checkAndConsumeRateLimit,
+  isRateLimited,
+  recordFailedAttempt,
+  resetRateLimit,
+} from '../services/rateLimitService.js';
+import { recordAuditLog } from '../services/auditService.js';
+import { isReservedUsername } from '../validations/authValidation.js';
+import { getSetting } from '../services/settingsService.js';
+import { hashToken } from '../services/tokenService.js';
 
-function generateToken(userId) {
-  return jwt.sign({ userId }, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN,
-  });
+function generateToken(userId, tokenVersion = 0) {
+  return jwt.sign(
+    { sub: userId, userId, tv: tokenVersion },
+    env.JWT_SECRET,
+    { expiresIn: env.JWT_EXPIRES_IN }
+  );
 }
 
 function setAuthCookie(res, token) {
@@ -22,23 +39,132 @@ function setAuthCookie(res, token) {
   });
 }
 
-export async function register(req, res, next) {
-  try {
-    const { name, email, password } = req.body;
-    const cleanEmail = email.toLowerCase().trim();
+function getClientIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '127.0.0.1';
+}
 
-    // Check if email already registered
+/**
+ * Live username availability check.
+ * GET /api/auth/username-available?u=
+ */
+export async function checkUsernameAvailable(req, res, next) {
+  try {
+    const ip = getClientIp(req);
+    const rateCheck = await checkAndConsumeRateLimit(
+      `username_avail:ip:${ip}`,
+      30,
+      60 * 1000 // 30 per minute per IP
+    );
+
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many availability checks. Please wait a moment.',
+        },
+      });
+    }
+
+    const raw = String(req.query.u || '').trim().toLowerCase();
+    if (!raw || !/^[a-z][a-z0-9_]{2,19}$/.test(raw) || isReservedUsername(raw)) {
+      return res.json({ success: true, data: { available: false } });
+    }
+
     const [existing] = await db
       .select({ id: users.id })
       .from(users)
-      .where(sql`lower(${users.email}) = ${cleanEmail}`);
+      .where(eq(users.username, raw));
 
-    if (existing) {
+    res.json({ success: true, data: { available: !existing } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Register a new user account with permanent username and 8 recovery codes.
+ * POST /api/auth/register
+ */
+export async function register(req, res, next) {
+  try {
+    const ip = getClientIp(req);
+    const rateCheck = await checkAndConsumeRateLimit(
+      `register:ip:${ip}`,
+      10,
+      60 * 60 * 1000 // 10 per hour per IP
+    );
+
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many registration attempts. Please try again later.',
+        },
+      });
+    }
+
+    const { name, username, password, email, phone, inviteCode } = req.body;
+
+    const allowRegistration = await getSetting('allowRegistration');
+    if (allowRegistration === false) {
+      if (!inviteCode || typeof inviteCode !== 'string' || !inviteCode.trim()) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'REGISTRATION_DISABLED',
+            message: 'Registration is currently invite-only. A valid invite code is required.',
+          },
+        });
+      }
+
+      const codeHash = hashToken(inviteCode.trim());
+      const [invitePerson] = await db
+        .select()
+        .from(people)
+        .where(
+          and(
+            eq(people.inviteCodeHash, codeHash),
+            eq(people.isDeleted, false)
+          )
+        );
+
+      if (!invitePerson || invitePerson.linkedUserId || (invitePerson.inviteExpiresAt && new Date(invitePerson.inviteExpiresAt) < new Date())) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'INVALID_INVITE_CODE',
+            message: 'This invite code is invalid, expired, or already claimed.',
+          },
+        });
+      }
+    }
+
+    const cleanUsername = username.toLowerCase().trim();
+
+    if (isReservedUsername(cleanUsername)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'RESERVED_USERNAME',
+          message: 'This username is reserved and cannot be registered.',
+        },
+      });
+    }
+
+    // Check if username is already taken
+    const [existingUser] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, cleanUsername));
+
+    if (existingUser) {
       return res.status(409).json({
         success: false,
         error: {
-          code: 'EMAIL_ALREADY_EXISTS',
-          message: 'An account with this email address already exists.',
+          code: 'USERNAME_TAKEN',
+          message: 'An account with this username already exists.',
         },
       });
     }
@@ -46,31 +172,63 @@ export async function register(req, res, next) {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        name,
-        email: cleanEmail,
-        passwordHash,
-        role: 'user',
-        isActive: true,
-      })
-      .returning({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        role: users.role,
-        createdAt: users.createdAt,
-      });
+    // Generate 8 cryptographically secure recovery codes
+    const generatedCodes = generateEightRecoveryCodes();
 
-    const token = generateToken(newUser.id);
-    setAuthCookie(res, token);
+    // Execute in transaction
+    const newUser = await db.transaction(async (tx) => {
+      const [createdUser] = await tx
+        .insert(users)
+        .values({
+          name: name.trim(),
+          username: cleanUsername,
+          email: email ? email.toLowerCase().trim() : null,
+          phone: phone ? phone.trim() : null,
+          passwordHash,
+          role: 'user',
+          isActive: true,
+          tokenVersion: 0,
+        })
+        .returning({
+          id: users.id,
+          name: users.name,
+          username: users.username,
+          email: users.email,
+          phone: users.phone,
+          role: users.role,
+          tokenVersion: users.tokenVersion,
+          createdAt: users.createdAt,
+        });
+
+      // Insert 8 hashed recovery codes
+      for (const rc of generatedCodes) {
+        await tx.insert(recoveryCodes).values({
+          userId: createdUser.id,
+          codeHash: rc.hash,
+        });
+      }
+
+      await recordAuditLog(
+        {
+          actor: { id: createdUser.id, role: createdUser.role, name: createdUser.name },
+          action: 'auth.register',
+          entityType: 'User',
+          entityId: createdUser.id,
+          after: { username: cleanUsername, name: createdUser.name },
+          ipAddress: ip,
+        },
+        tx
+      );
+
+      return createdUser;
+    });
 
     res.status(201).json({
       success: true,
       data: {
         user: newUser,
-        token,
+        // The plain recovery codes are returned ONCE here and NEVER again
+        recoveryCodes: generatedCodes.map((c) => c.plain),
       },
     });
   } catch (error) {
@@ -78,32 +236,47 @@ export async function register(req, res, next) {
   }
 }
 
+/**
+ * Login with username and password.
+ * POST /api/auth/login
+ */
 export async function login(req, res, next) {
   try {
-    const { email, password } = req.body;
-    const cleanEmail = email.toLowerCase().trim();
+    const ip = getClientIp(req);
+    const { username, password } = req.body;
+    const cleanUsername = String(username || '').toLowerCase().trim();
 
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(sql`lower(${users.email}) = ${cleanEmail}`);
+    // 5 per 15 minutes per IP
+    const rateKey = `login:ip:${ip}`;
+    const rateCheck = await checkAndConsumeRateLimit(rateKey, 5, 15 * 60 * 1000);
 
-    if (!user) {
-      return res.status(401).json({
+    if (!rateCheck.allowed) {
+      res.set('Retry-After', String(rateCheck.retryAfterSeconds || 900));
+      return res.status(429).json({
         success: false,
         error: {
-          code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password.',
+          code: 'RATE_LIMITED',
+          message: 'Too many login attempts. Please try again after 15 minutes.',
         },
       });
     }
 
-    if (!user.isActive) {
-      return res.status(403).json({
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, cleanUsername));
+
+    // Constant-time dummy compare if user does not exist or account is disabled
+    if (!user || !user.isActive) {
+      await bcrypt.compare(
+        password,
+        '$2b$10$wE99qF4JqF979.9999999.u99999999999999999999999999999'
+      );
+      return res.status(401).json({
         success: false,
         error: {
-          code: 'ACCOUNT_DISABLED',
-          message: 'This account has been disabled. Please contact support.',
+          code: 'INVALID_CREDENTIALS',
+          message: 'Incorrect username or password.',
         },
       });
     }
@@ -114,19 +287,40 @@ export async function login(req, res, next) {
         success: false,
         error: {
           code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password.',
+          message: 'Incorrect username or password.',
         },
       });
     }
 
-    const token = generateToken(user.id);
+    // Success: update lastLoginAt and reset login rate limit
+    await db
+      .update(users)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(users.id, user.id));
+
+    await resetRateLimit(rateKey);
+
+    const token = generateToken(user.id, user.tokenVersion);
     setAuthCookie(res, token);
+
+    await recordAuditLog({
+      actor: { id: user.id, role: user.role, name: user.name },
+      action: 'auth.login',
+      entityType: 'User',
+      entityId: user.id,
+      ipAddress: ip,
+    });
 
     const safeUser = {
       id: user.id,
       name: user.name,
+      username: user.username,
       email: user.email,
+      phone: user.phone,
       role: user.role,
+      passwordChangeNoticePending: user.passwordChangeNoticePending,
+      passwordChangeMethod: user.passwordChangeMethod,
+      passwordChangedAt: user.passwordChangedAt,
       createdAt: user.createdAt,
     };
 
@@ -142,6 +336,556 @@ export async function login(req, res, next) {
   }
 }
 
+/**
+ * Redeem a one-time recovery code to change password.
+ * POST /api/auth/recover
+ */
+export async function recoverWithCode(req, res, next) {
+  try {
+    const ip = getClientIp(req);
+    const { username, code, recoveryCode, newPassword } = req.body;
+    const cleanUsername = String(username || '').toLowerCase().trim();
+    const codeInput = recoveryCode || code;
+
+    // Check failed attempt rate limits: 5 failed/hour per user, 20 failed/hour per IP
+    const userLimitCheck = await isRateLimited(
+      `recover_fail:user:${cleanUsername}`,
+      5,
+      60 * 60 * 1000
+    );
+    const ipLimitCheck = await isRateLimited(
+      `recover_fail:ip:${ip}`,
+      20,
+      60 * 60 * 1000
+    );
+
+    if (userLimitCheck.isLimited || ipLimitCheck.isLimited) {
+      res.set('Retry-After', String(userLimitCheck.retryAfterSeconds || ipLimitCheck.retryAfterSeconds || 3600));
+      return res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMITED',
+          message: 'Too many failed recovery attempts. Please try again later or ask your admin for a reset link.',
+        },
+      });
+    }
+
+    const genericError = {
+      success: false,
+      error: {
+        code: 'INVALID_RECOVERY_CODE',
+        message: 'Invalid recovery code or account details.',
+      },
+    };
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, cleanUsername));
+
+    // Admin accounts can NEVER use recovery codes
+    if (!user || !user.isActive || user.role === 'admin') {
+      const failRate = await recordFailedAttempt(`recover_fail:user:${cleanUsername}`, 5, 60 * 60 * 1000);
+      await recordFailedAttempt(`recover_fail:ip:${ip}`, 20, 60 * 60 * 1000);
+      if (!failRate.allowed) {
+        res.set('Retry-After', String(failRate.retryAfterSeconds || 3600));
+        return res.status(429).json({
+          success: false,
+          error: {
+            code: 'RATE_LIMITED',
+            message: 'Too many failed recovery attempts.',
+          },
+        });
+      }
+      return res.status(400).json(genericError);
+    }
+
+    // Fetch unused recovery codes for this user
+    const userCodes = await db
+      .select()
+      .from(recoveryCodes)
+      .where(and(eq(recoveryCodes.userId, user.id), sql`${recoveryCodes.usedAt} IS NULL`));
+
+    let matchedCode = null;
+    for (const rc of userCodes) {
+      if (verifyRecoveryCode(codeInput, rc.codeHash)) {
+        matchedCode = rc;
+        break;
+      }
+    }
+
+    if (!matchedCode) {
+      const failRate = await recordFailedAttempt(`recover_fail:user:${cleanUsername}`, 5, 60 * 60 * 1000);
+      await recordFailedAttempt(`recover_fail:ip:${ip}`, 20, 60 * 60 * 1000);
+      if (!failRate.allowed) {
+        res.set('Retry-After', String(failRate.retryAfterSeconds || 3600));
+        return res.status(429).json({
+          success: false,
+          error: {
+            code: 'RATE_LIMITED',
+            message: 'Too many failed recovery attempts.',
+          },
+        });
+      }
+      return res.status(400).json(genericError);
+    }
+
+    // Success: mark code used, update password, bump tokenVersion, set notice
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
+    const now = new Date();
+
+    await db.transaction(async (tx) => {
+      // Mark recovery code used
+      await tx
+        .update(recoveryCodes)
+        .set({ usedAt: now })
+        .where(eq(recoveryCodes.id, matchedCode.id));
+
+      // Update user password and notice
+      await tx
+        .update(users)
+        .set({
+          passwordHash: newHash,
+          passwordChangedAt: now,
+          tokenVersion: user.tokenVersion + 1, // Sign out all sessions
+          passwordChangeNoticePending: true,
+          passwordChangeMethod: 'recovery_code',
+        })
+        .where(eq(users.id, user.id));
+
+      // Void any open admin resets
+      await tx
+        .update(passwordResets)
+        .set({ usedAt: now })
+        .where(and(eq(passwordResets.userId, user.id), sql`${passwordResets.usedAt} IS NULL`));
+
+      // Fulfill any open reset requests
+      await tx
+        .update(resetRequests)
+        .set({ status: 'fulfilled', handledAt: now })
+        .where(and(eq(resetRequests.userId, user.id), eq(resetRequests.status, 'open')));
+
+      await recordAuditLog(
+        {
+          actor: { id: user.id, role: user.role, name: user.name },
+          action: 'auth.password_recovered',
+          entityType: 'User',
+          entityId: user.id,
+          ipAddress: ip,
+        },
+        tx
+      );
+    });
+
+    // Reset failed attempt counter
+    await resetRateLimit(`recover_fail:user:${cleanUsername}`);
+
+    // Do NOT auto-login
+    res.json({
+      success: true,
+      message: 'Password recovered successfully. Please log in with your new password.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Submit a request to the admin for a password reset credential.
+ * POST /api/auth/reset-requests
+ */
+export async function submitResetRequest(req, res, next) {
+  try {
+    const ip = getClientIp(req);
+    const { username, note, userNote, contactChannel } = req.body;
+    const cleanUsername = String(username || '').toLowerCase().trim();
+
+    // Rate limits: 3 per hour per IP
+    const ipRate = await checkAndConsumeRateLimit(`reset_req:ip:${ip}`, 3, 60 * 60 * 1000);
+    if (!ipRate.allowed) {
+      res.set('Retry-After', String(ipRate.retryAfterSeconds || 3600));
+      return res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMITED',
+          message: 'Too many reset requests submitted. Please wait before trying again.',
+        },
+      });
+    }
+
+    const genericSuccess = {
+      success: true,
+      message: 'If this account exists, an admin has been notified. Contact your admin to get your reset link.',
+    };
+
+    const [user] = await db
+      .select({ id: users.id, role: users.role, isActive: users.isActive })
+      .from(users)
+      .where(eq(users.username, cleanUsername));
+
+    // Admin accounts cannot have reset requests, and user must be active
+    if (!user || !user.isActive || user.role === 'admin') {
+      return res.json(genericSuccess);
+    }
+
+    const cleanNote = note ? String(note).trim().slice(0, 300) : null;
+
+    // Check for existing open request
+    const [existingOpen] = await db
+      .select()
+      .from(resetRequests)
+      .where(and(eq(resetRequests.userId, user.id), eq(resetRequests.status, 'open')));
+
+    if (existingOpen) {
+      await db
+        .update(resetRequests)
+        .set({
+          note: cleanNote || existingOpen.note,
+          createdAt: new Date(),
+        })
+        .where(eq(resetRequests.id, existingOpen.id));
+    } else {
+      await db.insert(resetRequests).values({
+        userId: user.id,
+        note: cleanNote,
+        status: 'open',
+      });
+    }
+
+    res.json(genericSuccess);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Validate an admin-issued reset link token.
+ * GET /api/auth/reset-password/validate?token=
+ */
+export async function validateResetToken(req, res, next) {
+  try {
+    const rawToken = String(req.query.token || '').trim();
+    if (!rawToken) {
+      return res.json({ success: true, data: { valid: false } });
+    }
+
+    const tokenHash = hashResetToken(rawToken);
+    const now = new Date();
+
+    const [resetRecord] = await db
+      .select()
+      .from(passwordResets)
+      .where(
+        and(
+          eq(passwordResets.tokenHash, tokenHash),
+          sql`${passwordResets.usedAt} IS NULL`,
+          sql`${passwordResets.expiresAt} > ${now}`
+        )
+      );
+
+    if (!resetRecord) {
+      return res.json({ success: true, data: { valid: false } });
+    }
+
+    const [user] = await db
+      .select({ username: users.username, isActive: users.isActive, role: users.role })
+      .from(users)
+      .where(eq(users.id, resetRecord.userId));
+
+    if (!user || !user.isActive || user.role === 'admin') {
+      return res.json({ success: true, data: { valid: false } });
+    }
+
+    res.json({
+      success: true,
+      data: { valid: true, username: user.username },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Redeem admin-issued reset credential (either long token or short code).
+ * POST /api/auth/reset-password
+ */
+export async function resetPassword(req, res, next) {
+  try {
+    const ip = getClientIp(req);
+    // 10 per hour per IP
+    const rateCheck = await checkAndConsumeRateLimit(`reset_pwd:ip:${ip}`, 10, 60 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many password reset attempts. Please try again later.',
+        },
+      });
+    }
+
+    const { token, username, code, resetCode, newPassword } = req.body;
+    const cleanCode = (resetCode || code) ? String(resetCode || code).trim() : null;
+    const cleanUsername = username ? String(username).toLowerCase().trim() : null;
+
+    const genericError = {
+      success: false,
+      error: {
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid, expired, or deactivated reset credential.',
+      },
+    };
+
+    const now = new Date();
+    let resetRecord = null;
+    let targetUser = null;
+    let method = 'reset_link';
+
+    if (token) {
+      // Long token redemption (no attempt counter)
+      const tokenHash = hashResetToken(token.trim());
+      const [found] = await db
+        .select()
+        .from(passwordResets)
+        .where(
+          and(
+            eq(passwordResets.tokenHash, tokenHash),
+            sql`${passwordResets.usedAt} IS NULL`,
+            sql`${passwordResets.expiresAt} > ${now}`
+          )
+        );
+
+      if (!found) return res.status(400).json(genericError);
+      resetRecord = found;
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, resetRecord.userId));
+
+      if (!user || !user.isActive || user.role === 'admin') {
+        return res.status(400).json(genericError);
+      }
+      targetUser = user;
+      method = 'reset_link';
+    } else if (cleanUsername && cleanCode) {
+      // Short code redemption
+      const isCodeLimited = await isRateLimited(`reset_code:user:${cleanUsername}`, 5, 15 * 60 * 1000);
+      if (isCodeLimited.isLimited) {
+        res.set('Retry-After', String(isCodeLimited.retryAfterSeconds || 900));
+        return res.status(429).json({
+          success: false,
+          error: {
+            code: 'RATE_LIMITED',
+            message: 'Too many failed code reset attempts.',
+          },
+        });
+      }
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, cleanUsername));
+
+      if (!user || !user.isActive || user.role === 'admin') {
+        const failRate = await recordFailedAttempt(`reset_code:user:${cleanUsername}`, 5, 15 * 60 * 1000);
+        if (!failRate.allowed) {
+          res.set('Retry-After', String(failRate.retryAfterSeconds || 900));
+          return res.status(429).json({
+            success: false,
+            error: {
+              code: 'RATE_LIMITED',
+              message: 'Too many failed code reset attempts.',
+            },
+          });
+        }
+        return res.status(400).json(genericError);
+      }
+
+      // Find active reset record for this user (not expired, not used, failedAttempts < 5)
+      const [found] = await db
+        .select()
+        .from(passwordResets)
+        .where(
+          and(
+            eq(passwordResets.userId, user.id),
+            sql`${passwordResets.usedAt} IS NULL`,
+            sql`${passwordResets.expiresAt} > ${now}`,
+            sql`${passwordResets.failedAttempts} < 5`
+          )
+        )
+        .orderBy(desc(passwordResets.createdAt));
+
+      if (!found) {
+        const failRate = await recordFailedAttempt(`reset_code:user:${cleanUsername}`, 5, 15 * 60 * 1000);
+        if (!failRate.allowed) {
+          res.set('Retry-After', String(failRate.retryAfterSeconds || 900));
+          return res.status(429).json({
+            success: false,
+            error: {
+              code: 'RATE_LIMITED',
+              message: 'Too many failed code reset attempts.',
+            },
+          });
+        }
+        return res.status(400).json(genericError);
+      }
+
+      // Verify code
+      const isMatch = verifyRecoveryCode(cleanCode, found.codeHash) || hashResetToken(cleanCode) === found.codeHash;
+      if (!isMatch) {
+        // Increment failed attempts on the record (kills at 5)
+        await db
+          .update(passwordResets)
+          .set({ failedAttempts: found.failedAttempts + 1 })
+          .where(eq(passwordResets.id, found.id));
+
+        const failRate = await recordFailedAttempt(`reset_code:user:${cleanUsername}`, 5, 15 * 60 * 1000);
+        if (!failRate.allowed) {
+          res.set('Retry-After', String(failRate.retryAfterSeconds || 900));
+          return res.status(429).json({
+            success: false,
+            error: {
+              code: 'RATE_LIMITED',
+              message: 'Too many failed code reset attempts.',
+            },
+          });
+        }
+        return res.status(400).json(genericError);
+      }
+
+      await resetRateLimit(`reset_code:user:${cleanUsername}`);
+      resetRecord = found;
+      targetUser = user;
+      method = 'reset_code';
+    } else {
+      return res.status(400).json(genericError);
+    }
+
+    // Apply password change in transaction
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
+
+    await db.transaction(async (tx) => {
+      // Update user
+      await tx
+        .update(users)
+        .set({
+          passwordHash: newHash,
+          passwordChangedAt: now,
+          tokenVersion: targetUser.tokenVersion + 1, // Invalidates all old sessions
+          passwordChangeNoticePending: true,
+          passwordChangeMethod: method,
+        })
+        .where(eq(users.id, targetUser.id));
+
+      // Mark this reset record used
+      await tx
+        .update(passwordResets)
+        .set({ usedAt: now })
+        .where(eq(passwordResets.id, resetRecord.id));
+
+      // Void any other open resets for this user
+      await tx
+        .update(passwordResets)
+        .set({ usedAt: now })
+        .where(
+          and(
+            eq(passwordResets.userId, targetUser.id),
+            sql`${passwordResets.usedAt} IS NULL`
+          )
+        );
+
+      // Mark any linked or open reset requests fulfilled
+      await tx
+        .update(resetRequests)
+        .set({ status: 'fulfilled', handledAt: now })
+        .where(
+          and(
+            eq(resetRequests.userId, targetUser.id),
+            eq(resetRequests.status, 'open')
+          )
+        );
+
+      await recordAuditLog(
+        {
+          actor: { id: targetUser.id, role: targetUser.role, name: targetUser.name },
+          action: 'auth.password_reset',
+          entityType: 'User',
+          entityId: targetUser.id,
+          after: { method },
+          ipAddress: ip,
+        },
+        tx
+      );
+    });
+
+    // Do NOT auto-login
+    res.json({
+      success: true,
+      message: 'Your password has been reset successfully. Please log in with your new password.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Current user profile endpoint.
+ * GET /api/me
+ */
+export async function me(req, res) {
+  const user = req.user;
+  res.json({
+    success: true,
+    data: {
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        tokenVersion: user.tokenVersion,
+        passwordChangeNoticePending: user.passwordChangeNoticePending,
+        passwordChangeMethod: user.passwordChangeMethod,
+        passwordChangedAt: user.passwordChangedAt,
+        passwordChangeNotice: user.passwordChangeNoticePending
+          ? {
+              changedAt: user.passwordChangedAt,
+              method: user.passwordChangeMethod,
+            }
+          : null,
+      },
+    },
+  });
+}
+
+/**
+ * Dismiss the password changed banner notice.
+ * POST /api/me/dismiss-password-notice
+ */
+export async function dismissPasswordNotice(req, res, next) {
+  try {
+    await db
+      .update(users)
+      .set({ passwordChangeNoticePending: false })
+      .where(eq(users.id, req.user.id));
+
+    res.json({
+      success: true,
+      message: 'Notice dismissed.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Logout current session.
+ * POST /api/auth/logout
+ */
 export async function logout(req, res) {
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
@@ -152,14 +896,5 @@ export async function logout(req, res) {
   res.json({
     success: true,
     message: 'Logged out successfully.',
-  });
-}
-
-export async function me(req, res) {
-  res.json({
-    success: true,
-    data: {
-      user: req.user,
-    },
   });
 }

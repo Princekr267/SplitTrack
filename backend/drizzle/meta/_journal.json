@@ -15,6 +15,34 @@
       "when": 1791465410910,
       "tag": "0001_add_can_view_all_bills",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791465410911,
+      "tag": "0002_username_auth_and_recovery",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791465410912,
+      "tag": "0003_profile_and_upi_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791465410913,
+      "tag": "0004_frozen_groups_and_system_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791465410914,
+      "tag": "0005_phase4_oversight_and_integrity",
+      "breakpoints": true
     }
   ]
 }

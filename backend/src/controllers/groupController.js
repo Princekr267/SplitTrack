@@ -1,6 +1,6 @@
 import { eq, and, or, inArray, desc } from 'drizzle-orm';
 import { db } from '../config/db.js';
-import { groups, people, expenses, payments } from '../models/index.js';
+import { groups, people, expenses, payments, users } from '../models/index.js';
 import { createGroupWithHost, settleGroup, reopenGroup, ensureGroupNotSettled } from '../services/groupService.js';
 import { calculateGroupBalances } from '../services/balanceService.js';
 import { recordAuditLog } from '../services/auditService.js';
@@ -86,9 +86,10 @@ export async function getGroupById(req, res, next) {
     const isAdmin = req.user.role === 'admin';
 
     let isMember = false;
+    let viewingPerson = null;
     if (!isHost && !isAdmin) {
       const [linkedPerson] = await db
-        .select({ id: people.id })
+        .select({ id: people.id, canViewAllBills: people.canViewAllBills })
         .from(people)
         .where(
           and(
@@ -98,6 +99,7 @@ export async function getGroupById(req, res, next) {
           )
         );
       isMember = !!linkedPerson;
+      viewingPerson = linkedPerson;
     }
 
     if (!isHost && !isAdmin && !isMember) {
@@ -110,13 +112,50 @@ export async function getGroupById(req, res, next) {
     // Balances and people
     const balanceData = await calculateGroupBalances(groupId);
 
+    // Fetch host user details for UPI and host username
+    const [hostUser] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        username: users.username,
+        upiId: users.upiId,
+        showUpi: users.showUpi,
+      })
+      .from(users)
+      .where(eq(users.id, group.createdBy));
+
+    // Visibility filtering on balanceData.people:
+    // Host/admin sees all linked members' username.
+    // Friends see host's username and own username.
+    // Friends with canViewAllBills also see other linked members' username.
+    let peopleList = balanceData.people || [];
+    if (!isHost && !isAdmin) {
+      const canViewAll = viewingPerson?.canViewAllBills;
+      peopleList = peopleList.map((p) => {
+        if (p.isHost || p.linkedUserId === req.user.id || canViewAll) {
+          return p;
+        }
+        return {
+          ...p,
+          username: null,
+        };
+      });
+    }
+
+    const responseData = {
+      group,
+      isHost: isHost || isAdmin,
+      ...balanceData,
+      people: peopleList,
+    };
+
+    if (hostUser && hostUser.showUpi && hostUser.upiId) {
+      responseData.hostUpi = hostUser.upiId;
+    }
+
     res.json({
       success: true,
-      data: {
-        group,
-        isHost: isHost || isAdmin,
-        ...balanceData,
-      },
+      data: responseData,
     });
   } catch (error) {
     next(error);

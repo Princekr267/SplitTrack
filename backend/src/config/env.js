@@ -11,6 +11,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
+  RECOVERY_PEPPER: z.string().min(32, 'RECOVERY_PEPPER must be at least 32 characters'),
 });
 
 const parsed = envSchema.safeParse(process.env);

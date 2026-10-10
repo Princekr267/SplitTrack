@@ -15,6 +15,10 @@ export const groups = pgTable(
       .references(() => users.id, { onDelete: 'restrict' })
       .notNull(),
     isDeleted: boolean('is_deleted').default(false).notNull(),
+    isFrozen: boolean('is_frozen').default(false).notNull(),
+    frozenReason: text('frozen_reason'),
+    frozenAt: timestamp('frozen_at', { withTimezone: true }),
+    frozenBy: uuid('frozen_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
