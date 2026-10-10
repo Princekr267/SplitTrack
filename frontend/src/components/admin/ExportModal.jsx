@@ -40,7 +40,7 @@ export default function ExportModal({ isOpen, onClose, defaultEntity = 'users' }
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `splittrack_${entity}_export_${Date.now()}.csv`);
+      link.setAttribute('download', `splitprism_${entity}_export_${Date.now()}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();

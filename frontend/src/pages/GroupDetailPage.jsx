@@ -286,7 +286,7 @@ export default function GroupDetailPage() {
       ? `• Balance: Host owes you ${formatINR(person.groupOwesYou)}`
       : `• Balance: Fully Settled (₹0.00)`;
 
-    const text = encodeURIComponent(`SplitTrack • ${group.name}
+    const text = encodeURIComponent(`SplitPrism • ${group.name}
 Statement for ${person.name}:
 • Total Share: ${formatINR(person.shareSplitsTotal)}
 • Paid / Repaid: ${formatINR(person.acceptedSentPaymentsTotal)}

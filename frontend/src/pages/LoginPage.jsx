@@ -56,7 +56,7 @@ export default function LoginPage() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-slate-950 shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
             <Split className="w-6 h-6 font-bold" />
           </div>
-          <span className="font-extrabold text-2xl tracking-tight text-text">SplitTrack</span>
+          <span className="font-extrabold text-2xl tracking-tight text-text">SplitPrism</span>
         </Link>
         <h2 className="text-xl font-bold text-text">Sign in to your account</h2>
         <p className="mt-1 text-xs text-text-muted">
@@ -104,7 +104,7 @@ export default function LoginPage() {
               placeholder="e.g. vikram"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              hint="Enter your unique SplitTrack username"
+              hint="Enter your unique SplitPrism username"
             />
 
             <div>

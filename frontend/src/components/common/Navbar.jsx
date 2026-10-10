@@ -61,7 +61,7 @@ export default function Navbar({ onOpenNewGroup }) {
             <Split className="w-5 h-5 font-bold" />
           </m.div>
           <span className="font-extrabold text-xl tracking-tight text-text group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">
-            SplitTrack
+            SplitPrism
           </span>
         </Link>
 
@@ -73,7 +73,7 @@ export default function Navbar({ onOpenNewGroup }) {
             data-calculator-trigger="true"
             whileTap={{ scale: 0.92 }}
             transition={springs.snappy}
-            onClick={() => window.dispatchEvent(new CustomEvent('splittrack:toggle-calculator'))}
+            onClick={() => window.dispatchEvent(new CustomEvent('splitprism:toggle-calculator'))}
             title="Financial Calculator"
             aria-label="Toggle financial calculator"
             className="p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-raised transition-colors border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
@@ -182,7 +182,7 @@ export default function Navbar({ onOpenNewGroup }) {
             data-calculator-trigger="true"
             whileTap={{ scale: 0.92 }}
             transition={springs.snappy}
-            onClick={() => window.dispatchEvent(new CustomEvent('splittrack:toggle-calculator'))}
+            onClick={() => window.dispatchEvent(new CustomEvent('splitprism:toggle-calculator'))}
             title="Financial Calculator"
             aria-label="Toggle financial calculator"
             className="p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-raised transition-colors border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"

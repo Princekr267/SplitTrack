@@ -186,7 +186,7 @@ export default function RegisterPage() {
         setRegisteredRecoveryCodes(result.recoveryCodes);
       } else {
         // Admin or user without codes
-        addToast('Account created successfully! Welcome to SplitTrack 🎉', 'success');
+        addToast('Account created successfully! Welcome to SplitPrism 🎉', 'success');
         navigate(returnUrl);
       }
     } catch (err) {
@@ -207,12 +207,12 @@ export default function RegisterPage() {
 
   const handleDownloadCodes = () => {
     if (!registeredRecoveryCodes) return;
-    const content = `SplitTrack Account Recovery Codes\nUsername: ${username.trim().toLowerCase()}\nDate: ${new Date().toISOString()}\n\nKeep these codes safe and private:\n\n${registeredRecoveryCodes.map((code, idx) => `${idx + 1}. ${code}`).join('\n')}\n\nEach code can be used exactly once to recover your account if you forget your password.`;
+    const content = `SplitPrism Account Recovery Codes\nUsername: ${username.trim().toLowerCase()}\nDate: ${new Date().toISOString()}\n\nKeep these codes safe and private:\n\n${registeredRecoveryCodes.map((code, idx) => `${idx + 1}. ${code}`).join('\n')}\n\nEach code can be used exactly once to recover your account if you forget your password.`;
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `splittrack-recovery-codes-${username.trim().toLowerCase()}.txt`;
+    link.download = `splitprism-recovery-codes-${username.trim().toLowerCase()}.txt`;
     link.click();
     URL.revokeObjectURL(url);
     addToast('Recovery codes downloaded!', 'success');
@@ -226,7 +226,7 @@ export default function RegisterPage() {
     if (!confirmedSaved) return;
     // Clear codes from memory
     setRegisteredRecoveryCodes(null);
-    addToast('Account setup complete! Welcome to SplitTrack 🎉', 'success');
+    addToast('Account setup complete! Welcome to SplitPrism 🎉', 'success');
     navigate(returnUrl);
   };
 
@@ -242,7 +242,7 @@ export default function RegisterPage() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-slate-950 shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
             <Split className="w-6 h-6 font-bold" />
           </div>
-          <span className="font-extrabold text-2xl tracking-tight text-text">SplitTrack</span>
+          <span className="font-extrabold text-2xl tracking-tight text-text">SplitPrism</span>
         </Link>
         <h2 className="text-xl font-bold text-text">
           {registeredRecoveryCodes ? 'Save Your Recovery Codes' : 'Create your account'}
@@ -275,7 +275,7 @@ export default function RegisterPage() {
                   Save these now
                 </p>
                 <p>
-                  SplitTrack never shows them again and no one can recover your account without them.
+                  SplitPrism never shows them again and no one can recover your account without them.
                   Each code can be used once to regain access if you lose your password.
                 </p>
               </div>
@@ -347,7 +347,7 @@ export default function RegisterPage() {
                 onClick={handleFinishRegistration}
                 iconRight={<ArrowRight className="w-3.5 h-3.5" />}
               >
-                Continue to SplitTrack
+                Continue to SplitPrism
               </Button>
             </div>
           </Card>

@@ -45,7 +45,7 @@ export default function LandingPage() {
 
             <p className="text-sm sm:text-lg text-text-muted max-w-2xl mx-auto leading-relaxed">
               When one person pays on a trip, friends say "I'll pay later" and everybody loses track.
-              SplitTrack records every rupee in paise precision, sends private WhatsApp passbooks, and eliminates payment awkwardness.
+              SplitPrism records every rupee in paise precision, sends private WhatsApp passbooks, and eliminates payment awkwardness.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
@@ -70,7 +70,7 @@ export default function LandingPage() {
               Simple Workflow
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-text tracking-tight">
-              How SplitTrack Works in 3 Easy Steps
+              How SplitPrism Works in 3 Easy Steps
             </h2>
           </div>
 
@@ -202,7 +202,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-text-muted">
-        SplitTrack © {new Date().getFullYear()} — Built with React, Tailwind CSS & PERN Stack
+        SplitPrism © {new Date().getFullYear()} — Built with React, Tailwind CSS & PERN Stack
       </footer>
     </div>
   );

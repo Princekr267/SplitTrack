@@ -1,5 +1,5 @@
 /**
- * SplitTrack Custom SVG Chart Primitives and Design System Hub
+ * SplitPrism Custom SVG Chart Primitives and Design System Hub
  */
 
 export { ChartCard } from './ChartCard.jsx';

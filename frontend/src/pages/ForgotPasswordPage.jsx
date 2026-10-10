@@ -119,7 +119,7 @@ export default function ForgotPasswordPage() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-slate-950 shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
             <Split className="w-6 h-6 font-bold" />
           </div>
-          <span className="font-extrabold text-2xl tracking-tight text-text">SplitTrack</span>
+          <span className="font-extrabold text-2xl tracking-tight text-text">SplitPrism</span>
         </Link>
         <h2 className="text-xl font-bold text-text">Account Recovery</h2>
         <p className="mt-1 text-xs text-text-muted">
@@ -137,7 +137,7 @@ export default function ForgotPasswordPage() {
               <div className="border-b border-border pb-3">
                 <h3 className="text-sm font-semibold text-text">Choose a Recovery Option</h3>
                 <p className="text-xs text-text-muted mt-0.5">
-                  SplitTrack accounts do not use email passwords. Pick the fastest option for you:
+                  SplitPrism accounts do not use email passwords. Pick the fastest option for you:
                 </p>
               </div>
 
@@ -387,7 +387,7 @@ export default function ForgotPasswordPage() {
                   placeholder="e.g. vikram"
                   value={reqUsername}
                   onChange={(e) => setReqUsername(e.target.value.toLowerCase())}
-                  hint="Your registered SplitTrack username"
+                  hint="Your registered SplitPrism username"
                 />
 
                 <Input

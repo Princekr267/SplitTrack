@@ -13,7 +13,7 @@ export default function AnnouncementBanner() {
         const res = await api.get('/settings/public');
         if (mounted && res.success && res.data?.announcement?.enabled && res.data.announcement.message) {
           const msg = res.data.announcement.message;
-          const dismissedMsg = sessionStorage.getItem('splittrack_dismissed_announcement');
+          const dismissedMsg = sessionStorage.getItem('splitprism_dismissed_announcement') || sessionStorage.getItem('splittrack_dismissed_announcement');
           if (dismissedMsg !== msg) {
             setAnnouncement(res.data.announcement);
           }
@@ -34,7 +34,7 @@ export default function AnnouncementBanner() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    sessionStorage.setItem('splittrack_dismissed_announcement', announcement.message);
+    sessionStorage.setItem('splitprism_dismissed_announcement', announcement.message);
   };
 
   return (

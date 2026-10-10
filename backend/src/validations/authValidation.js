@@ -13,6 +13,7 @@ export const RESERVED_USERNAMES = new Set([
   'host',
   'staff',
   'moderator',
+  'splitprism',
   'splittrack',
   'null',
   'undefined',

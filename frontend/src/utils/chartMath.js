@@ -1,5 +1,5 @@
 /**
- * SplitTrack Chart Mathematics & Formatting Helpers
+ * SplitPrism Chart Mathematics & Formatting Helpers
  * Pure utility functions for scale projection, tick generation,
  * Indian currency formatting, and accessible chart summaries.
  */

@@ -4,11 +4,15 @@ import env from '../config/env.js';
 import { db } from '../config/db.js';
 import { users } from '../models/index.js';
 
-export const COOKIE_NAME = 'splittrack_token';
+export const COOKIE_NAME = 'splitprism_token';
 
 export async function authenticate(req, res, next) {
   try {
-    const token = req.cookies?.[COOKIE_NAME] || req.headers.authorization?.replace(/^Bearer\s+/i, '');
+    const token =
+      req.cookies?.[COOKIE_NAME] ||
+      req.cookies?.['splitprism_token'] ||
+      req.cookies?.['splittrack_token'] ||
+      req.headers.authorization?.replace(/^Bearer\s+/i, '');
 
     if (!token) {
       return res.status(401).json({

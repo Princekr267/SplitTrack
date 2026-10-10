@@ -67,7 +67,7 @@ export default function PersonCopyDropdown({ group, person, isHost = false }) {
     const hostUpi = group?.hostUpi;
     const upiLine = hostUpi ? `\n• Pay to UPI: ${hostUpi}` : '';
 
-    return `SplitTrack • ${group.name}
+    return `SplitPrism • ${group.name}
 Statement for ${person.name}:
 • Total Share: ${formatINR(person.shareSplitsTotal)}
 • Paid / Repaid: ${formatINR(person.acceptedSentPaymentsTotal)}
@@ -124,7 +124,7 @@ ${balanceLine}${upiLine}`;
 
       const upiStr = data.hostUpi ? `\nPay to UPI: ${data.hostUpi}` : '';
 
-      const detailedText = `*SplitTrack: ${group.name}* 💸
+      const detailedText = `*SplitPrism: ${group.name}* 💸
 Statement for: *${person.name}*
 ━━━━━━━━━━━━━━━━━━━
 *EXPENSES:*
@@ -323,7 +323,7 @@ ${balanceStr}${upiStr}`;
                     <div>
                       <span className="font-bold block">Account Linked</span>
                       <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 block">
-                        Claimed by SplitTrack user
+                        Claimed by SplitPrism user
                       </span>
                     </div>
                   </div>

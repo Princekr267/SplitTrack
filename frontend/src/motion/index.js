@@ -1,5 +1,5 @@
 /**
- * SplitTrack Central Motion Hub
+ * SplitPrism Central Motion Hub
  * Single source of truth for motion primitives, tokens, variants, and hooks.
  */
 

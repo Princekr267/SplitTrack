@@ -9,7 +9,7 @@ import { calculateGroupBalances } from '../services/balanceService.js';
 import { hashToken } from '../services/tokenService.js';
 
 async function seed() {
-  console.log('🌱 Starting SplitTrack seed script...');
+  console.log('🌱 Starting SplitPrism seed script...');
 
   // Clean existing data
   await db.execute(sql`
@@ -35,7 +35,7 @@ async function seed() {
     .values({
       name: 'Platform Admin',
       username: 'admin',
-      email: 'admin@splittrack.com',
+      email: 'admin@splitprism.com',
       passwordHash: adminPasswordHash,
       role: 'admin',
       isActive: true,
@@ -50,7 +50,7 @@ async function seed() {
     .values({
       name: 'Vikram Host',
       username: 'vikram',
-      email: 'host@splittrack.com',
+      email: 'host@splitprism.com',
       passwordHash: hostPasswordHash,
       role: 'user',
       isActive: true,
@@ -65,7 +65,7 @@ async function seed() {
     .values({
       name: 'Karan Patel',
       username: 'karan',
-      email: 'friend@splittrack.com',
+      email: 'friend@splitprism.com',
       passwordHash: friendPasswordHash,
       role: 'user',
       isActive: true,
@@ -447,7 +447,7 @@ async function seed() {
   }
 
 
-  console.log('\n✨ SplitTrack database successfully seeded with demo data!\n');
+  console.log('\n✨ SplitPrism database successfully seeded with demo data!\n');
 }
 
 seed()

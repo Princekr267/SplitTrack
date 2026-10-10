@@ -211,7 +211,7 @@ export default function ProfilePage() {
         downloadAnchor.setAttribute('href', jsonString);
         downloadAnchor.setAttribute(
           'download',
-          `splittrack-export-${profileData?.user?.username || 'user'}-${new Date().toISOString().slice(0, 10)}.json`
+          `splitprism-export-${profileData?.user?.username || 'user'}-${new Date().toISOString().slice(0, 10)}.json`
         );
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();

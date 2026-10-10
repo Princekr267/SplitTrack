@@ -82,7 +82,7 @@ export default function PublicStatementPage() {
           icon={<AlertCircle className="w-6 h-6 text-rose-500" />}
           title="Statement Unavailable"
           description={error || 'This link may have been revoked by the host or does not exist.'}
-          actionText="Return to SplitTrack"
+          actionText="Return to SplitPrism"
           onAction={() => window.location.href = '/'}
         />
       </div>
@@ -102,7 +102,7 @@ export default function PublicStatementPage() {
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-slate-950 font-black text-xs">
               <Split className="w-4 h-4" />
             </div>
-            <span className="font-extrabold text-base tracking-tight text-text">SplitTrack</span>
+            <span className="font-extrabold text-base tracking-tight text-text">SplitPrism</span>
           </Link>
 
           <div className="flex items-center gap-2">
