@@ -155,10 +155,10 @@ describe('Phase 1: Username Auth, Recovery Codes & Password Reset Lifecycle', ()
     expect(res.body.data.user.username).toBe('login_hero');
     expect(res.body.data.token).toBeDefined();
 
-    // Verify splitprism_token cookie set
+    // Verify splitorbit_token cookie set
     const cookies = res.headers['set-cookie'];
     expect(cookies).toBeDefined();
-    expect(cookies.some((c) => c.includes('splitprism_token='))).toBe(true);
+    expect(cookies.some((c) => c.includes('splitorbit_token='))).toBe(true);
 
     // Fetch /api/auth/me using token
     const meRes = await request(app)

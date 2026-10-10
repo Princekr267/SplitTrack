@@ -1,6 +1,6 @@
-# SplitPrism 💸 — Shared Expense & Repayment Tracker for Friends
+# SplitOrbit 💸 — Shared Expense & Repayment Tracker for Friends
 
-SplitPrism is a production-grade **PERN-stack** (PostgreSQL, Express, React, Node.js) web application designed to solve shared expense tracking and part-repayments for friend outings and road trips. When one person (the host) pays for group activities, SplitPrism acts as the single source of truth for who owes how much, who paid what, and whether it was cash or online.
+SplitOrbit is a production-grade **PERN-stack** (PostgreSQL, Express, React, Node.js) web application designed to solve shared expense tracking and part-repayments for friend outings and road trips. When one person (the host) pays for group activities, SplitOrbit acts as the single source of truth for who owes how much, who paid what, and whether it was cash or online.
 
 ---
 
@@ -17,7 +17,7 @@ SplitPrism is a production-grade **PERN-stack** (PostgreSQL, Express, React, Nod
 - **Level 1 Public Passbook Link (`/s/:token`)**: Read-only, unguessable 32-byte token link. Privacy middleware guarantees friends only see their own splits and repayments—never leaking other members' names, totals, or balances.
 
 ### 3. Account Claim Flow & Multi-Group Friend Passbook
-- **Level 2 Claim Invite (`/invite/:code`)**: Single-use 7-day invite codes for friends to claim their person profile and link it to their SplitPrism account.
+- **Level 2 Claim Invite (`/invite/:code`)**: Single-use 7-day invite codes for friends to claim their person profile and link it to their SplitOrbit account.
 - **Atomic Race Protection**: Database transaction enforces `WHERE linked_user_id IS NULL`, preventing concurrent claims.
 - **Friend Passbook (`/friend`)**: Friends log in to see all groups where they are members, view itemized activity, and submit repayments directly to the host.
 - **Repayment Lifecycle**: Repayments submitted by friends start as `pending`. Group hosts review and **Accept** (crediting to the ledger) or **Reject** with a mandatory reason. Friends can edit and resubmit rejected payments.
@@ -96,9 +96,9 @@ The database seed provides pre-configured accounts with realistic group expenses
 
 | Role | Email | Password | Access & Features |
 |---|---|---|---|
-| **Admin** | `admin@splitprism.com` | `adminpassword123` | Admin Control Center (`/admin`), user toggling, audit trail |
-| **Host** | `host@splitprism.com` | `hostpassword123` | "Manali Road Trip" group, pending approvals inbox, settle modal |
-| **Friend** | `friend@splitprism.com` | `friendpassword123` | Friend Passbook (`/friend`), linked profile for Karan Patel |
+| **Admin** | `admin@splitorbit.com` | `adminpassword123` | Admin Control Center (`/admin`), user toggling, audit trail |
+| **Host** | `host@splitorbit.com` | `hostpassword123` | "Manali Road Trip" group, pending approvals inbox, settle modal |
+| **Friend** | `friend@splitorbit.com` | `friendpassword123` | Friend Passbook (`/friend`), linked profile for Karan Patel |
 
 ### Demo Share & Invite Links
 - **Public Passbook (Aarav Sharma)**: [http://localhost:5173/s/demo-share-token-aarav](http://localhost:5173/s/demo-share-token-aarav)
@@ -108,7 +108,7 @@ The database seed provides pre-configured accounts with realistic group expenses
 
 ## 🧪 Automated Test Suite
 
-SplitPrism includes comprehensive backend test coverage tested directly against real PostgreSQL:
+SplitOrbit includes comprehensive backend test coverage tested directly against real PostgreSQL:
 
 ```bash
 cd backend

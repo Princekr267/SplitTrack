@@ -50,7 +50,7 @@ function ask(question, isHidden = false) {
 }
 
 async function main() {
-  console.log('\n=== SplitPrism: Create Admin Account ===\n');
+  console.log('\n=== SplitOrbit: Create Admin Account ===\n');
 
   const username = (await ask('Admin Username: ')).toLowerCase().trim();
   if (!username || !/^[a-z][a-z0-9_]{2,19}$/.test(username)) {

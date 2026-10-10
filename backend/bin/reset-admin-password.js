@@ -50,7 +50,7 @@ function ask(question, isHidden = false) {
 }
 
 async function main() {
-  console.log('\n=== SplitPrism: Reset Admin Password ===\n');
+  console.log('\n=== SplitOrbit: Reset Admin Password ===\n');
 
   const username = (await ask('Admin Username: ')).toLowerCase().trim();
   if (!username) {

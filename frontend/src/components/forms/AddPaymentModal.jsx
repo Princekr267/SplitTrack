@@ -520,7 +520,7 @@ export default function AddPaymentModal({
               <button
                 type="button"
                 data-calculator-trigger="true"
-                onClick={() => window.dispatchEvent(new CustomEvent('splitprism:open-calculator'))}
+                onClick={() => window.dispatchEvent(new CustomEvent('splitorbit:open-calculator'))}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
                 title="Open Calculator to compute repayment"
               >

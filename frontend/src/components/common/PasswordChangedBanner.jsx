@@ -38,19 +38,19 @@ export default function PasswordChangedBanner() {
         transition={springs.snappy}
         role="alert"
         aria-live="assertive"
-        className="w-full bg-amber-500/15 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 px-4 py-2.5 z-40 relative"
+        className="w-full bg-amber-500/15 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 px-4 py-2.5 sm:py-2 z-40 relative overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm">
-          <div className="flex items-center gap-2 min-w-0">
-            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <p className="truncate">
+        <div className="max-w-5xl mx-auto relative flex items-center justify-center px-7 sm:px-10 min-h-[1.75rem]">
+          <p className="text-center text-xs sm:text-sm font-medium leading-relaxed">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 inline-block align-text-bottom mr-1.5 -mt-0.5" />
+            <span>
               Your password was changed on <span className="font-semibold">{dateFormatted}</span> via{' '}
               <span className="font-semibold">{methodText}</span>. If this wasn't you, reset it immediately or contact an admin.
-            </p>
-          </div>
+            </span>
+          </p>
           <button
             onClick={dismissPasswordNotice}
-            className="p-1 rounded-md hover:bg-amber-500/20 text-amber-800 dark:text-amber-200 transition shrink-0"
+            className="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-amber-500/20 active:scale-95 text-amber-800 dark:text-amber-200 transition shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/40"
             aria-label="Dismiss password change notice"
           >
             <X className="w-4 h-4" />

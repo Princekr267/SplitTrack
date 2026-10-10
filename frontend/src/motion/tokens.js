@@ -1,6 +1,6 @@
 /**
  * Motion Tokens: Springs, Durations, and Bezier Easings
- * Central source of truth for physics-based animations across SplitPrism.
+ * Central source of truth for physics-based animations across SplitOrbit.
  */
 
 export const springs = {

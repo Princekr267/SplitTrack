@@ -72,17 +72,17 @@ export default function Calculator() {
     const handleToggle = () => setIsOpen((prev) => !prev);
     const handleClose = () => setIsOpen(false);
 
-    window.addEventListener('splitprism:open-calculator', handleOpen);
-    window.addEventListener('splitprism:toggle-calculator', handleToggle);
-    window.addEventListener('splitprism:close-calculator', handleClose);
+    window.addEventListener('splitorbit:open-calculator', handleOpen);
+    window.addEventListener('splitorbit:toggle-calculator', handleToggle);
+    window.addEventListener('splitorbit:close-calculator', handleClose);
     window.addEventListener('splittrack:open-calculator', handleOpen);
     window.addEventListener('splittrack:toggle-calculator', handleToggle);
     window.addEventListener('splittrack:close-calculator', handleClose);
 
     return () => {
-      window.removeEventListener('splitprism:open-calculator', handleOpen);
-      window.removeEventListener('splitprism:toggle-calculator', handleToggle);
-      window.removeEventListener('splitprism:close-calculator', handleClose);
+      window.removeEventListener('splitorbit:open-calculator', handleOpen);
+      window.removeEventListener('splitorbit:toggle-calculator', handleToggle);
+      window.removeEventListener('splitorbit:close-calculator', handleClose);
       window.removeEventListener('splittrack:open-calculator', handleOpen);
       window.removeEventListener('splittrack:toggle-calculator', handleToggle);
       window.removeEventListener('splittrack:close-calculator', handleClose);
@@ -291,7 +291,7 @@ export default function Calculator() {
   };
 
   const portalContent = (
-    <div className="splitprism-calculator-root">
+    <div className="splitorbit-calculator-root">
       {/* Floating Action Button (FAB) - Clear of mobile bottom nav and FAB */}
       <m.button
         ref={toggleBtnRef}

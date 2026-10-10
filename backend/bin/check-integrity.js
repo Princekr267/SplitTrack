@@ -4,7 +4,7 @@ import { runIntegrityCheck } from '../src/services/integrityService.js';
 import { pool } from '../src/config/db.js';
 
 async function main() {
-  console.log('🔍 Running SplitPrism Database Integrity Check...');
+  console.log('🔍 Running SplitOrbit Database Integrity Check...');
   try {
     const report = await runIntegrityCheck(null);
     console.log(`\nIntegrity Status: ${report.status === 'clean' ? '✅ CLEAN' : '❌ CORRUPTED'}`);

@@ -2,13 +2,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
-const THEME_KEY = 'splitprism_theme';
+const THEME_KEY = 'splitorbit_theme';
 
 export function ThemeProvider({ children }) {
   // Read stored preference, defaulting to 'system'
   const [theme, setThemeState] = useState(() => {
     try {
-      const stored = localStorage.getItem(THEME_KEY) || localStorage.getItem('splittrack_theme');
+      const stored =
+        localStorage.getItem(THEME_KEY) ||
+        localStorage.getItem('splittrack_theme');
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
         return stored;
       }
@@ -21,7 +23,9 @@ export function ThemeProvider({ children }) {
   const [resolvedTheme, setResolvedTheme] = useState(() => {
     if (typeof window === 'undefined') return 'dark';
     try {
-      const stored = localStorage.getItem(THEME_KEY) || localStorage.getItem('splittrack_theme');
+      const stored =
+        localStorage.getItem(THEME_KEY) ||
+        localStorage.getItem('splittrack_theme');
       if (stored === 'light' || stored === 'dark') return stored;
     } catch (e) {}
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

@@ -77,7 +77,7 @@ app.use(errorHandler);
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   const PORT = env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`🚀 SplitPrism Backend running on http://localhost:${PORT}`);
+    console.log(`🚀 SplitOrbit Backend running on http://localhost:${PORT}`);
   });
 }
 

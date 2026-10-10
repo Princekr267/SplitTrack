@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * Renders person name according to SplitPrism identity & privacy hierarchy:
+ * Renders person name according to SplitOrbit identity & privacy hierarchy:
  * - Dominant text: linked account name (users.name) if linked, else host-assigned person.name.
  * - @username: muted/smaller right next to or below the name when available.
  * - Secondary note: 'saved as "Rahul"' when the host's custom label differs from the linked account name.

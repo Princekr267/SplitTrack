@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('splitprism_token');
+        localStorage.removeItem('splitorbit_token');
         localStorage.removeItem('splittrack_token');
       }
       setUser(null);
@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
     });
     if (res.success && res.data?.user) {
       if (res.data?.token && typeof window !== 'undefined') {
-        localStorage.setItem('splitprism_token', res.data.token);
+        localStorage.setItem('splitorbit_token', res.data.token);
         localStorage.removeItem('splittrack_token');
       }
       setUser(res.data.user);
@@ -62,7 +62,7 @@ export function AuthProvider({ children }) {
     });
     if (res.success && res.data?.user) {
       if (res.data?.token && typeof window !== 'undefined') {
-        localStorage.setItem('splitprism_token', res.data.token);
+        localStorage.setItem('splitorbit_token', res.data.token);
         localStorage.removeItem('splittrack_token');
       }
       setUser(res.data.user);
@@ -87,7 +87,7 @@ export function AuthProvider({ children }) {
       await api.post('/auth/logout');
     } finally {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('splitprism_token');
+        localStorage.removeItem('splitorbit_token');
         localStorage.removeItem('splittrack_token');
       }
       setUser(null);
