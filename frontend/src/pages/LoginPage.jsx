@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { Split, ArrowRight, Eye, EyeOff, AlertCircle, KeyRound, Shield, Users } from 'lucide-react';
+import { Split, ArrowRight, Eye, EyeOff, AlertCircle, KeyRound, Users } from 'lucide-react';
 import ThemeToggle from '../components/common/ThemeToggle.jsx';
 import Button from '../components/common/Button.jsx';
 import Input from '../components/common/Input.jsx';
@@ -162,89 +162,45 @@ export default function LoginPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {/* Demo Host */}
-              <m.button
-                type="button"
-                whileHover={{ y: -1, scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                transition={springs.snappy}
-                onClick={async () => {
-                  setUsername('vikram');
-                  setPassword('hostpassword123');
-                  try {
-                    setLoading(true);
-                    await login('vikram', 'hostpassword123');
-                    addToast('Signed in as Demo Host (Vikram)', 'success');
-                    navigate(returnUrl);
-                  } catch (err) {
-                    setErrorMessage(err.message || 'Failed to sign in as host');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="group relative flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-raised/60 hover:bg-surface-raised border border-border hover:border-emerald-500/40 transition-all text-left cursor-pointer shadow-xs"
-              >
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-text group-hover:text-emerald-500 transition-colors">
-                      Demo Host
-                    </span>
-                    <span className="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-surface border border-border text-text-muted">
-                      Host
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-text-muted block truncate mt-0.5">
-                    @vikram • Trip Group
+            <m.button
+              type="button"
+              whileHover={{ y: -1, scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              transition={springs.snappy}
+              onClick={async () => {
+                setUsername('vikram');
+                setPassword('hostpassword123');
+                try {
+                  setLoading(true);
+                  await login('vikram', 'hostpassword123');
+                  addToast('Signed in as Demo Host (Vikram)', 'success');
+                  navigate(returnUrl);
+                } catch (err) {
+                  setErrorMessage(err.message || 'Failed to sign in as host');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="w-full group relative flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-raised/60 hover:bg-surface-raised border border-border hover:border-emerald-500/40 transition-all text-left cursor-pointer shadow-xs"
+            >
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Users className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-xs font-bold text-text group-hover:text-emerald-500 transition-colors">
+                    Demo Host
+                  </span>
+                  <span className="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-surface border border-border text-text-muted">
+                    Host
                   </span>
                 </div>
-              </m.button>
-
-              {/* Demo Admin */}
-              <m.button
-                type="button"
-                whileHover={{ y: -1, scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                transition={springs.snappy}
-                onClick={async () => {
-                  setUsername('admin');
-                  setPassword('adminpassword123');
-                  try {
-                    setLoading(true);
-                    await login('admin', 'adminpassword123');
-                    addToast('Signed in as Demo Admin', 'success');
-                    navigate('/admin');
-                  } catch (err) {
-                    setErrorMessage(err.message || 'Failed to sign in as admin');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="group relative flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-raised/60 hover:bg-surface-raised border border-border hover:border-brand-500/40 transition-all text-left cursor-pointer shadow-xs"
-              >
-                <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 text-brand-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  <Shield className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-text group-hover:text-brand-500 transition-colors">
-                      Demo Admin
-                    </span>
-                    <span className="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-surface border border-border text-text-muted">
-                      Admin
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-text-muted block truncate mt-0.5">
-                    @admin • Oversight
-                  </span>
-                </div>
-              </m.button>
-            </div>
+                <span className="text-[10px] text-text-muted block truncate mt-0.5">
+                  @vikram • Trip Group
+                </span>
+              </div>
+            </m.button>
           </div>
         </Card>
       </div>

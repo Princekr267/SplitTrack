@@ -96,6 +96,11 @@ export default function GroupDetailPage() {
   // Quick pre-selected member for modals
   const [selectedPersonForAction, setSelectedPersonForAction] = useState(null);
 
+  // Preload chart chunk on idle so Analytics tab opens instantly
+  useEffect(() => {
+    import('../components/charts/GroupChartsSection.jsx');
+  }, []);
+
   const fetchAnalytics = useCallback(async () => {
     try {
       setAnalyticsLoading(true);
@@ -114,6 +119,9 @@ export default function GroupDetailPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      // Kick off analytics in parallel with group/expenses/payments to eliminate sequential waterfall
+      const analyticsPromise = api.get(`/groups/${groupId}/analytics`).catch((err) => ({ error: err }));
+
       const [groupRes, expRes, payRes] = await Promise.all([
         api.get(`/groups/${groupId}`),
         api.get(`/groups/${groupId}/expenses`),
@@ -126,7 +134,17 @@ export default function GroupDetailPage() {
         setSummary(groupRes.data.summary || null);
         setIsHost(groupRes.data.isHost);
         if (groupRes.data.isHost || user?.role === 'admin') {
-          fetchAnalytics();
+          setAnalyticsLoading(true);
+          analyticsPromise.then((res) => {
+            if (res?.success) {
+              setAnalytics(res.data);
+              setAnalyticsError(null);
+            } else if (res?.error && res.error.status !== 403) {
+              setAnalyticsError(res?.error?.message || 'Failed to load chart analytics');
+            }
+          }).finally(() => {
+            setAnalyticsLoading(false);
+          });
         }
       }
       if (expRes.success) {
@@ -140,7 +158,7 @@ export default function GroupDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [groupId, addToast, user, fetchAnalytics]);
+  }, [groupId, addToast, user]);
 
   useEffect(() => {
     fetchData();
@@ -356,7 +374,6 @@ ${balanceLine}`);
 
   const tabList = [
     { id: 'people', label: 'People', icon: Users, count: visiblePeople.length },
-    ...(isHost ? [{ id: 'charts', label: 'Charts', icon: BarChart3, className: 'sm:hidden' }] : []),
     { id: 'expenses', label: 'Expenses', icon: Receipt, count: expenses.length },
     {
       id: 'payments',
@@ -365,6 +382,7 @@ ${balanceLine}`);
       count: payments.length,
       badgeAlert: Boolean(summary && summary.totalPending > 0),
     },
+    ...(isHost ? [{ id: 'analytics', label: 'Analytics', icon: BarChart3 }] : []),
   ];
 
   return (
@@ -651,47 +669,12 @@ ${balanceLine}`);
           </div>
         )}
 
-        {/* Desktop Charts Section (Below summary stats, host view) */}
-        {isHost && (
-          <div className="hidden sm:block space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">
-                Group Visualizations
-              </h2>
-            </div>
-            <React.Suspense fallback={<GroupChartsSkeleton />}>
-              <GroupChartsSection
-                analytics={analytics}
-                loading={analyticsLoading}
-                error={analyticsError}
-                onRetry={fetchAnalytics}
-                isSettled={group?.status === 'settled'}
-              />
-            </React.Suspense>
-          </div>
-        )}
-
         {/* Tab Navigation */}
         <Tabs
           tabs={tabList}
           activeTab={activeTab}
           onChange={(newTab) => setActiveTab(newTab)}
         />
-
-        {/* TAB 0: Charts (Mobile Only) */}
-        {activeTab === 'charts' && isHost && (
-          <div className="sm:hidden space-y-4 animate-fade-in">
-            <React.Suspense fallback={<GroupChartsSkeleton />}>
-              <GroupChartsSection
-                analytics={analytics}
-                loading={analyticsLoading}
-                error={analyticsError}
-                onRetry={fetchAnalytics}
-                isSettled={group?.status === 'settled'}
-              />
-            </React.Suspense>
-          </div>
-        )}
 
         {/* TAB 1: People & Balances */}
         {activeTab === 'people' && (
@@ -1117,6 +1100,21 @@ ${balanceLine}`);
                 })}
               </Stagger>
             )}
+          </div>
+        )}
+
+        {/* TAB: Analytics (Host Only - Desktop & Mobile) */}
+        {(activeTab === 'analytics' || activeTab === 'charts') && isHost && (
+          <div className="space-y-4 animate-fade-in">
+            <React.Suspense fallback={<GroupChartsSkeleton />}>
+              <GroupChartsSection
+                analytics={analytics}
+                loading={analyticsLoading}
+                error={analyticsError}
+                onRetry={fetchAnalytics}
+                isSettled={group?.status === 'settled'}
+              />
+            </React.Suspense>
           </div>
         )}
       </main>
