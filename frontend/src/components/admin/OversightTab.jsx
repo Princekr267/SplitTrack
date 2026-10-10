@@ -48,28 +48,30 @@ export default function OversightTab() {
         const params = {
           page,
           limit: 25,
-          search,
+          search: search.trim() || undefined,
           status: statusFilter !== 'all' ? statusFilter : undefined,
           isDeleted: isDeletedFilter !== 'all' ? isDeletedFilter : undefined,
           pendingTooLong: subTab === 'pending' ? 'true' : undefined,
         };
         const res = await api.get('/admin/payments', { params });
-        setItems(res.data.data.payments);
-        setTotalPages(res.data.data.pagination.totalPages || 1);
+        const paymentList = res?.data?.payments || res?.data?.data?.payments || (Array.isArray(res?.data) ? res.data : []);
+        setItems(paymentList);
+        setTotalPages(res?.data?.pagination?.totalPages || res?.data?.data?.pagination?.totalPages || 1);
       } else {
         const params = {
           page,
           limit: 25,
-          search,
+          search: search.trim() || undefined,
           isDeleted: isDeletedFilter !== 'all' ? isDeletedFilter : undefined,
         };
         const res = await api.get('/admin/expenses', { params });
-        setItems(res.data.data.expenses);
-        setTotalPages(res.data.data.pagination.totalPages || 1);
+        const expenseList = res?.data?.expenses || res?.data?.data?.expenses || (Array.isArray(res?.data) ? res.data : []);
+        setItems(expenseList);
+        setTotalPages(res?.data?.pagination?.totalPages || res?.data?.data?.pagination?.totalPages || 1);
       }
     } catch (err) {
       console.error('Failed to load oversight records', err);
-      addToast('Failed to load transaction records.', 'error');
+      addToast(err.message || 'Failed to load transaction records.', 'error');
     } finally {
       setLoading(false);
     }
@@ -143,48 +145,51 @@ export default function OversightTab() {
   return (
     <div className="space-y-6">
       {/* Sub Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           <button
+            type="button"
             onClick={() => {
               setSubTab('payments');
               setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               subTab === 'payments'
-                ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-brand-500/15 text-brand-600 dark:text-brand-400 border border-brand-500/30'
+                : 'text-text-muted hover:text-text bg-surface-raised/50 border border-transparent'
             }`}
           >
-            <CreditCard className="w-4 h-4" />
+            <CreditCard className="w-3.5 h-3.5" />
             All Payments
           </button>
           <button
+            type="button"
             onClick={() => {
               setSubTab('expenses');
               setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               subTab === 'expenses'
-                ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-brand-500/15 text-brand-600 dark:text-brand-400 border border-brand-500/30'
+                : 'text-text-muted hover:text-text bg-surface-raised/50 border border-transparent'
             }`}
           >
-            <Receipt className="w-4 h-4" />
+            <Receipt className="w-3.5 h-3.5" />
             All Expenses
           </button>
           <button
+            type="button"
             onClick={() => {
               setSubTab('pending');
               setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               subTab === 'pending'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                : 'text-slate-400 hover:text-amber-400'
+                ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                : 'text-text-muted hover:text-amber-500 bg-surface-raised/50 border border-transparent'
             }`}
           >
-            <Clock className="w-4 h-4 text-amber-400" />
+            <Clock className="w-3.5 h-3.5 text-amber-500" />
             Pending Alert Queue
           </button>
         </div>
@@ -197,7 +202,7 @@ export default function OversightTab() {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-2.5 py-1.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-slate-200 focus:outline-none"
+              className="px-2.5 py-1.5 text-xs rounded-xl bg-surface-raised border border-border text-text focus:outline-none cursor-pointer"
             >
               <option value="all">All Statuses</option>
               <option value="pending">Pending</option>
@@ -212,7 +217,7 @@ export default function OversightTab() {
               setIsDeletedFilter(e.target.value);
               setPage(1);
             }}
-            className="px-2.5 py-1.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-slate-200 focus:outline-none"
+            className="px-2.5 py-1.5 text-xs rounded-xl bg-surface-raised border border-border text-text focus:outline-none cursor-pointer"
           >
             <option value="all">Active & Voided</option>
             <option value="false">Active Only</option>
@@ -220,14 +225,14 @@ export default function OversightTab() {
           </select>
 
           <Button variant="ghost" size="sm" onClick={fetchData} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
 
       {subTab === 'pending' && (
-        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-400" />
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
           <span>
             Listing pending member payment submissions exceeding the system alert threshold age. Admin can intervene or prompt host.
           </span>
@@ -235,11 +240,11 @@ export default function OversightTab() {
       )}
 
       {/* Table view */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden">
+      <div className="rounded-2xl border border-border bg-surface overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-800/30 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-border bg-surface-raised text-[10px] font-bold text-text-muted uppercase tracking-wider">
                 <th className="py-3 px-4">Group</th>
                 {subTab === 'expenses' ? (
                   <>
@@ -259,44 +264,44 @@ export default function OversightTab() {
                 <th className="py-3 px-4 text-right">Admin Overrides</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs">
+            <tbody className="divide-y divide-border text-xs">
               {loading && items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500">
+                  <td colSpan={6} className="py-8 text-center text-text-muted">
                     Loading records...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500">
+                  <td colSpan={6} className="py-8 text-center text-text-muted">
                     No records found matching filters.
                   </td>
                 </tr>
               ) : (
                 items.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-800/20 transition-colors">
+                  <tr key={row.id} className="hover:bg-surface-raised/50 transition-colors">
                     <td className="py-3 px-4">
-                      <div className="font-medium text-slate-200">{row.groupName}</div>
-                      <div className="text-[10px] text-slate-500 font-mono">{new Date(row.createdAt).toLocaleDateString()}</div>
+                      <div className="font-semibold text-text">{row.groupName}</div>
+                      <div className="text-[10px] text-text-muted font-mono">{new Date(row.createdAt).toLocaleDateString()}</div>
                     </td>
 
                     {subTab === 'expenses' ? (
                       <>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-200">{row.title}</div>
-                          {row.description && <div className="text-[11px] text-slate-400 truncate max-w-xs">{row.description}</div>}
+                          <div className="font-bold text-text">{row.title}</div>
+                          {row.description && <div className="text-[11px] text-text-muted truncate max-w-xs">{row.description}</div>}
                         </td>
-                        <td className="py-3 px-4 text-slate-300">{row.paidByName}</td>
-                        <td className="py-3 px-4 font-mono font-bold text-slate-100">
+                        <td className="py-3 px-4 text-text">{row.paidByName}</td>
+                        <td className="py-3 px-4 font-mono font-bold text-text">
                           {formatINR(row.totalAmount)}
                         </td>
                         <td className="py-3 px-4">
                           {row.isDeleted ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 uppercase">
                               Voided
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
                               Active
                             </span>
                           )}
@@ -305,36 +310,36 @@ export default function OversightTab() {
                     ) : (
                       <>
                         <td className="py-3 px-4">
-                          <div className="text-slate-200 font-medium">
-                            {row.fromPersonName} <span className="text-slate-500">→</span> {row.toPersonName}
+                          <div className="text-text font-medium">
+                            {row.fromPersonName} <span className="text-text-muted">→</span> {row.toPersonName}
                           </div>
-                          {row.reference && <div className="text-[10px] text-slate-500 font-mono">Ref: {row.reference}</div>}
+                          {row.reference && <div className="text-[10px] text-text-muted font-mono">Ref: {row.reference}</div>}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-mono font-bold text-slate-100">{formatINR(row.amount)}</div>
-                          <div className="text-[10px] text-slate-400 uppercase">{row.mode}</div>
+                          <div className="font-mono font-bold text-text">{formatINR(row.amount)}</div>
+                          <div className="text-[10px] text-text-muted uppercase">{row.mode}</div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1.5">
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                                 row.status === 'accepted'
-                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
                                   : row.status === 'pending'
-                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                  : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                               }`}
                             >
                               {row.isDeleted ? 'Voided' : row.status}
                             </span>
                             {row.ageDays !== undefined && (
-                              <span className="text-[10px] text-slate-400 font-mono">
+                              <span className="text-[10px] text-text-muted font-mono">
                                 ({row.ageDays}d old)
                               </span>
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-slate-400 text-xs">{row.hostName}</td>
+                        <td className="py-3 px-4 text-text-muted text-xs">{row.hostName}</td>
                       </>
                     )}
 
@@ -342,31 +347,30 @@ export default function OversightTab() {
                       <div className="flex items-center justify-end gap-1.5">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="xs"
                           onClick={() => handleAction(row, subTab === 'expenses' ? 'expense' : 'payment', 'edit')}
-                          className="text-slate-300 hover:text-white"
                         >
-                          <Edit2 className="w-3.5 h-3.5 mr-1" />
+                          <Edit2 className="w-3 h-3 mr-1" />
                           Edit
                         </Button>
                         {row.isDeleted ? (
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="xs"
                             onClick={() => handleAction(row, subTab === 'expenses' ? 'expense' : 'payment', 'restore')}
-                            className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                            className="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
                           >
-                            <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                            <RotateCcw className="w-3 h-3 mr-1" />
                             Restore
                           </Button>
                         ) : (
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="xs"
                             onClick={() => handleAction(row, subTab === 'expenses' ? 'expense' : 'payment', 'void')}
-                            className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                            className="text-rose-600 dark:text-rose-400 hover:bg-rose-500/10"
                           >
-                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                            <Trash2 className="w-3 h-3 mr-1" />
                             Void
                           </Button>
                         )}
@@ -380,7 +384,7 @@ export default function OversightTab() {
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between p-3 border-t border-slate-800 text-xs text-slate-400">
+          <div className="flex items-center justify-between p-3 border-t border-border text-xs text-text-muted">
             <span>Page {page} of {totalPages}</span>
             <div className="flex gap-2">
               <Button
@@ -414,7 +418,7 @@ export default function OversightTab() {
           <form onSubmit={submitEdit} className="space-y-4">
             {overrideModal.entityType === 'expense' ? (
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-text mb-1.5">
                   Title
                 </label>
                 <input
@@ -422,19 +426,19 @@ export default function OversightTab() {
                   required
                   value={overrideModal.title}
                   onChange={(e) => setOverrideModal((prev) => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-brand-500"
+                  className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-text text-sm focus:outline-none focus:border-brand-500"
                 />
               </div>
             ) : (
               <>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-text mb-1.5">
                     Status
                   </label>
                   <select
                     value={overrideModal.status}
                     onChange={(e) => setOverrideModal((prev) => ({ ...prev, status: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-brand-500"
+                    className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-text text-sm focus:outline-none focus:border-brand-500 cursor-pointer"
                   >
                     <option value="pending">Pending</option>
                     <option value="accepted">Accepted</option>
@@ -442,13 +446,13 @@ export default function OversightTab() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-text mb-1.5">
                     Payment Mode
                   </label>
                   <select
                     value={overrideModal.mode}
                     onChange={(e) => setOverrideModal((prev) => ({ ...prev, mode: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-brand-500"
+                    className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-text text-sm focus:outline-none focus:border-brand-500 cursor-pointer"
                   >
                     <option value="online">Online / UPI</option>
                     <option value="cash">Cash</option>
@@ -458,7 +462,7 @@ export default function OversightTab() {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-text mb-1.5">
                 Amount (₹ Rupees)
               </label>
               <input
@@ -468,11 +472,11 @@ export default function OversightTab() {
                 required
                 value={overrideModal.amount}
                 onChange={(e) => setOverrideModal((prev) => ({ ...prev, amount: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-brand-500"
+                className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-text text-sm focus:outline-none focus:border-brand-500"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
               <Button
                 variant="ghost"
                 type="button"

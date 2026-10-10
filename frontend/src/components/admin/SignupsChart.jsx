@@ -146,7 +146,7 @@ export default function SignupsChart({ data = [] }) {
       {/* Hover tooltip */}
       {hoveredIndex !== null && points[hoveredIndex] && (
         <div
-          className="absolute -top-7 pointer-events-none transform -translate-x-1/2 px-2 py-1 rounded-md bg-slate-900 text-white text-[11px] font-semibold shadow-md border border-slate-700 whitespace-nowrap z-10"
+          className="absolute -top-7 pointer-events-none transform -translate-x-1/2 px-2.5 py-1 rounded-lg bg-surface-raised text-text text-[11px] font-bold shadow-md border border-border whitespace-nowrap z-10"
           style={{
             left: `${(points[hoveredIndex].x / width) * 100}%`,
           }}

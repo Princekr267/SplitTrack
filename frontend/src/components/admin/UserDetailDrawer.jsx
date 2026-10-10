@@ -64,9 +64,10 @@ export default function UserDetailDrawer({ userId, isOpen, onClose }) {
                 {data.user.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               <div>
-                <h3 className="text-sm font-extrabold text-text flex items-center gap-2">
-                  <PersonName name={data.user.name} username={data.user.username} />
-                </h3>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-base font-extrabold text-text">{data.user.name}</span>
+                  <span className="text-xs font-mono font-semibold text-brand-600 dark:text-brand-400">@{data.user.username}</span>
+                </div>
                 <span className="text-[11px] text-text-muted">
                   Account ID: <code className="font-mono text-[10px]">{data.user.id}</code>
                 </span>

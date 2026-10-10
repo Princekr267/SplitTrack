@@ -75,9 +75,24 @@ export async function getPublicSettings() {
 /**
  * Validate sensitive action (reason + password + rate limiting).
  */
-export async function verifyAdminSensitiveAction(adminUser, currentPassword, reason, reqIp) {
+export async function verifyAdminSensitiveAction(adminUserOrId, passwordOrOptions, reason, reqIp) {
+  const adminId = typeof adminUserOrId === 'object' && adminUserOrId !== null
+    ? (adminUserOrId.id || adminUserOrId.userId)
+    : adminUserOrId;
+
+  let currentPassword = '';
+  let actionReason = '';
+
+  if (passwordOrOptions && typeof passwordOrOptions === 'object') {
+    currentPassword = passwordOrOptions.password || passwordOrOptions.currentPassword || '';
+    actionReason = passwordOrOptions.reason || reason || '';
+  } else {
+    currentPassword = typeof passwordOrOptions === 'string' ? passwordOrOptions : '';
+    actionReason = typeof reason === 'string' ? reason : '';
+  }
+
   // 1. Reason check (3 to 500 chars)
-  if (!reason || typeof reason !== 'string' || reason.trim().length < 3 || reason.trim().length > 500) {
+  if (!actionReason || typeof actionReason !== 'string' || actionReason.trim().length < 3 || actionReason.trim().length > 500) {
     const error = new Error('A reason between 3 and 500 characters is required for this action.');
     error.status = 400;
     error.code = 'REASON_REQUIRED';
@@ -85,7 +100,7 @@ export async function verifyAdminSensitiveAction(adminUser, currentPassword, rea
   }
 
   // 2. Rate limit wrong password attempts per admin user
-  const rateKey = `admin_sensitive_pw:${adminUser.id}`;
+  const rateKey = `admin_sensitive_pw:${adminId}`;
   const rateCheck = await checkAndConsumeRateLimit(rateKey, 5, 15 * 60 * 1000);
   if (!rateCheck.allowed) {
     const error = new Error('Too many incorrect password attempts. Please wait 15 minutes.');
@@ -105,7 +120,7 @@ export async function verifyAdminSensitiveAction(adminUser, currentPassword, rea
   const [adminRecord] = await db
     .select({ passwordHash: users.passwordHash })
     .from(users)
-    .where(eq(users.id, adminUser.id));
+    .where(eq(users.id, adminId));
 
   if (!adminRecord) {
     const error = new Error('Administrator account not found.');

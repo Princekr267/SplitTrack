@@ -35,7 +35,8 @@ export default function ExportModal({ isOpen, onClose, defaultEntity = 'users' }
       );
 
       // Trigger browser file download
-      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const rawData = response.data || response;
+      const blob = new Blob([rawData], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -60,7 +61,7 @@ export default function ExportModal({ isOpen, onClose, defaultEntity = 'users' }
           setError('Failed to export data. Please check your admin password.');
         }
       } else {
-        setError(err.response?.data?.error?.message || 'Failed to export data.');
+        setError(err.message || err.response?.data?.error?.message || 'Failed to export data.');
       }
     } finally {
       setLoading(false);
@@ -70,22 +71,22 @@ export default function ExportModal({ isOpen, onClose, defaultEntity = 'users' }
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Export System Data to CSV">
       <form onSubmit={handleExport} className="space-y-4">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
-          <Shield className="w-5 h-5 flex-shrink-0 text-amber-400" />
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
+          <Shield className="w-5 h-5 flex-shrink-0 text-amber-500" />
           <span>
             Sensitive admin action. Exporting raw data is audited and requires confirmation with your admin password.
           </span>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-500" />
             <span>{error}</span>
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-bold text-text uppercase tracking-wider mb-1.5">
             Select Dataset
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -100,13 +101,13 @@ export default function ExportModal({ isOpen, onClose, defaultEntity = 'users' }
                 key={item.id}
                 type="button"
                 onClick={() => setEntity(item.id)}
-                className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all ${
+                className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                   entity === item.id
-                    ? 'bg-brand-500/20 border-brand-500/40 text-brand-300 ring-1 ring-brand-500/30'
-                    : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    ? 'bg-brand-500/15 border-brand-500/40 text-brand-600 dark:text-brand-400 ring-1 ring-brand-500/30'
+                    : 'bg-surface-raised border-border text-text-muted hover:text-text hover:bg-surface'
                 }`}
               >
-                <FileSpreadsheet className="w-4 h-4 text-brand-400" />
+                <FileSpreadsheet className="w-4 h-4 text-brand-500" />
                 <span>{item.label}</span>
               </button>
             ))}
@@ -114,7 +115,7 @@ export default function ExportModal({ isOpen, onClose, defaultEntity = 'users' }
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-bold text-text uppercase tracking-wider mb-1.5">
             Audit Reason
           </label>
           <input
@@ -123,12 +124,12 @@ export default function ExportModal({ isOpen, onClose, defaultEntity = 'users' }
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Monthly financial review, backup"
-            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-brand-500"
+            className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-text text-sm focus:outline-none focus:border-brand-500"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-bold text-text uppercase tracking-wider mb-1.5">
             Your Admin Password
           </label>
           <input
@@ -137,11 +138,11 @@ export default function ExportModal({ isOpen, onClose, defaultEntity = 'users' }
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter password to authenticate"
-            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-brand-500"
+            className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-text text-sm focus:outline-none focus:border-brand-500"
           />
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-2 pt-2 border-t border-border">
           <Button variant="ghost" type="button" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

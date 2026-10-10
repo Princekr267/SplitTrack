@@ -940,9 +940,10 @@ export default function AdminDashboardPage() {
                           {req.name?.charAt(0) || 'U'}
                         </div>
                         <div>
-                          <span className="font-bold text-text text-xs flex items-center gap-1.5">
-                            <PersonName name={req.name} username={req.username} />
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-text text-xs">{req.name}</span>
+                            <span className="text-[11px] font-mono text-brand-600 dark:text-brand-400 font-semibold">@{req.username}</span>
+                          </div>
                           <span className="text-[11px] text-text-muted">
                             Submitted: {formatDate(req.createdAt)}
                           </span>
@@ -1084,12 +1085,20 @@ export default function AdminDashboardPage() {
                       <div className="min-w-0">
                         <button
                           onClick={() => setInspectedUserId(u.id)}
-                          className="font-bold text-text hover:text-brand-500 text-left block truncate cursor-pointer transition"
+                          className="text-left block truncate cursor-pointer transition group"
+                          title="Click to view full user details"
                         >
-                          <PersonName name={u.name} username={u.username} />
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-bold text-text group-hover:text-brand-500 transition-colors truncate">
+                              {u.name}
+                            </span>
+                            <span className="text-[11px] font-mono text-brand-600 dark:text-brand-400 font-semibold shrink-0">
+                              @{u.username}
+                            </span>
+                          </div>
                         </button>
-                        <span className="text-[10px] text-text-muted block truncate">
-                          {u.email || 'No email'}
+                        <span className="text-[10px] text-text-muted block truncate mt-0.5">
+                          {u.email ? u.email : (u.phone ? `Phone: ${u.phone}` : 'No email attached')}
                         </span>
                       </div>
                     </div>

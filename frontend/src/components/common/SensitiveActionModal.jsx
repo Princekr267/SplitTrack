@@ -34,7 +34,7 @@ export default function SensitiveActionModal({
 
     try {
       setSubmitting(true);
-      await onConfirm({ reason: reason.trim(), currentPassword });
+      await onConfirm({ reason: reason.trim(), currentPassword, password: currentPassword });
       handleClose();
     } catch (err) {
       setError(err.message || 'Action failed. Please try again.');
