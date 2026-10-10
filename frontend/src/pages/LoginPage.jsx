@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { Split, ArrowRight, UserCheck, Shield, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Split, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import ThemeToggle from '../components/common/ThemeToggle.jsx';
 import Button from '../components/common/Button.jsx';
 import Input from '../components/common/Input.jsx';
@@ -41,12 +41,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickLogin = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setErrorMessage('');
   };
 
   return (
@@ -141,31 +135,6 @@ export default function LoginPage() {
               Sign In
             </Button>
           </form>
-
-          {/* Quick Test Demo Credentials */}
-          <div className="pt-4 border-t border-border space-y-2.5">
-            <span className="block text-[11px] font-semibold uppercase tracking-wider text-text-muted text-center">
-              Quick Test Credentials
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleQuickLogin('host@splittrack.com', 'hostpassword123')}
-                iconLeft={<UserCheck className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />}
-              >
-                Demo Host
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleQuickLogin('admin@splittrack.com', 'adminpassword123')}
-                iconLeft={<Shield className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />}
-              >
-                Demo Admin
-              </Button>
-            </div>
-          </div>
         </Card>
       </div>
     </div>

@@ -27,7 +27,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ addToast }}>
       {children}
       {/* Toast container */}
-      <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+      <div className="fixed bottom-5 left-0 right-0 sm:left-auto sm:right-5 z-50 flex flex-col items-center sm:items-end gap-2 sm:max-w-sm sm:w-full pointer-events-none px-4 sm:px-0">
         <AnimatePresence mode="popLayout">
           {toasts.map((toast) => {
             const isSuccess = toast.type === 'success';
@@ -51,7 +51,7 @@ export function ToastProvider({ children }) {
                   stiffness: 340,
                   mass: 0.85,
                 }}
-                className={`pointer-events-auto flex items-center justify-between gap-3 p-3.5 rounded-xl shadow-xl border backdrop-blur-md transition-colors ${
+                className={`pointer-events-auto w-full max-w-sm flex items-center justify-between gap-3 p-3.5 rounded-xl shadow-xl border backdrop-blur-md transition-colors ${
                   isSuccess
                     ? 'bg-white dark:bg-emerald-950/90 text-slate-900 dark:text-emerald-100 border-emerald-500/40 shadow-emerald-500/10'
                     : isError
